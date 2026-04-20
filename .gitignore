@@ -1,0 +1,15 @@
+/data/*
+
+target/
+project/target/
+project/project/
+*.class
+*.log
+
+.idea/
+*.iml
+*.iws
+trabajo/.bsp/
+
+.DS_Store
+Thumbs.db

@@ -1,0 +1,142 @@
+# ============================================================
+#  Entorno Spark + Zeppelin para prácticas de máster
+#  Uso:
+#    Arrancar:           docker compose up -d
+#    Escalar workers:    docker compose up -d --scale spark-worker=2
+#    Parar:              docker compose stop
+#    Destruir todo:      docker compose down -v
+#
+#  Carpetas locales que debes crear junto a este fichero:
+#    ./notebooks   → notebooks de Zeppelin (se guardan aquí)
+#    ./trabajo     → jars y datos para spark-shell y spark-submit
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  #  SPARK MASTER
+  # ----------------------------------------------------------
+  spark-master:
+    image: apache/spark:3.5.5
+    platform: linux/amd64
+    container_name: spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - spark-home:/opt/spark
+      - ./data:/opt/spark/data
+    networks:
+      - spark-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------
+  #  SPARK WORKER
+  # ----------------------------------------------------------
+  spark-worker:
+    image: apache/spark:3.5.5
+    platform: linux/amd64
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_WEBUI_PORT=8081
+    ports:
+      - "8081-8083:8081"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    volumes:
+      - spark-home:/opt/spark
+      - ./data:/opt/spark/data
+    networks:
+      - spark-network
+    restart: on-failure
+    mem_limit: 3g
+
+  # ----------------------------------------------------------
+  #  ZEPPELIN
+  # ----------------------------------------------------------
+  zeppelin:
+    image: apache/zeppelin:0.12.0
+    platform: linux/amd64
+    container_name: zeppelin
+    environment:
+      - ZEPPELIN_ADDR=0.0.0.0
+      - ZEPPELIN_PORT=8888
+      - SPARK_HOME=/opt/spark
+      - MASTER=spark://spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
+      - ZEPPELIN_NOTEBOOK_DIR=/opt/zeppelin/notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - spark-home:/opt/spark
+      - ./notebooks:/opt/zeppelin/notebook
+      - zeppelin-logs:/opt/zeppelin/logs
+      - ./data:/opt/spark/data
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - spark-network
+    restart: on-failure
+    mem_limit: 2g
+
+  # ----------------------------------------------------------
+  #  SPARK CLIENT
+  #  Terminal de trabajo para spark-shell y spark-submit.
+  #
+  #  Uso:
+  #    Entrar:   docker exec -it spark-client bash
+  #
+  #  Desde dentro del contenedor:
+  #    spark-shell:
+  #      /opt/spark/bin/spark-shell --master spark://spark-master:7077
+  #
+  #    spark-submit:
+  #      /opt/spark/bin/spark-submit \
+  #        --master spark://spark-master:7077 \
+  #        --class com.ejemplo.MiApp \
+  #        /home/trabajo/mi-app.jar
+  #
+  #  Deja tus jars y ficheros de datos en la carpeta ./trabajo
+  #  del host; aparecerán en /home/trabajo dentro del contenedor.
+  # ----------------------------------------------------------
+  spark-client:
+    image: apache/spark:3.5.5
+    platform: linux/amd64
+    container_name: spark-client
+    entrypoint: /bin/bash
+    stdin_open: true
+    tty: true
+    environment:
+      - SPARK_HOME=/opt/spark
+    volumes:
+      - spark-home:/opt/spark
+      - ./trabajo:/home/trabajo   # Carpeta compartida con el host
+      - ./data:/opt/spark/data
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
+    driver: bridge
+
+volumes:
+  spark-home:
+  zeppelin-logs:
