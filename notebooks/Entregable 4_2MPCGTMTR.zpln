@@ -1,0 +1,2029 @@
+{
+  "paragraphs": [
+    {
+      "text": "import org.apache.spark.sql.types._\r\nimport org.apache.spark.sql.functions._\r\nimport org.apache.spark.ml.feature.{VectorAssembler, StandardScaler, StringIndexer, PCA}\r\nimport org.apache.spark.ml.clustering.{KMeans, GaussianMixture}\r\nimport org.apache.spark.ml.evaluation.ClusteringEvaluator\r\nimport org.apache.spark.ml.classification.{RandomForestClassifier, LogisticRegression, DecisionTreeClassifier, DecisionTreeClassificationModel, GBTClassifier}\r\nimport org.apache.spark.ml.evaluation.BinaryClassificationEvaluator\r\nimport org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}\r\nimport org.apache.spark.ml.linalg.Vector\r\nimport org.apache.spark.ml.Pipeline\r\n\r\nspark.sparkContext.setLogLevel(\"WARN\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 12:20:13.705",
+      "progress": 0,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import org.apache.spark.sql.types._\nimport org.apache.spark.sql.functions._\nimport org.apache.spark.ml.feature.{VectorAssembler, StandardScaler, StringIndexer, PCA}\nimport org.apache.spark.ml.clustering.{KMeans, GaussianMixture}\nimport org.apache.spark.ml.evaluation.ClusteringEvaluator\nimport org.apache.spark.ml.classification.{RandomForestClassifier, LogisticRegression, DecisionTreeClassifier, DecisionTreeClassificationModel, GBTClassifier}\nimport org.apache.spark.ml.evaluation.BinaryClassificationEvaluator\nimport org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}\nimport org.apache.spark.ml.linalg.Vector\nimport org.apache.spark.ml.Pipeline\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776701716337_1671639676",
+      "id": "paragraph_1776701716337_1671639676",
+      "dateCreated": "2026-04-20 16:15:16.343",
+      "dateStarted": "2026-04-21 12:20:13.787",
+      "dateFinished": "2026-04-21 12:20:16.716",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val schemaDefinition \u003d StructType(\r\n  Array(\r\n    StructField(\"IDENTIFICADOR\", StringType, true),\r\n    StructField(\"ANOMES\", IntegerType, true),\r\n    StructField(\"CNAE\", StringType, true),\r\n    StructField(\"PRODUCTO\", StringType, true),\r\n    StructField(\"MERCADO\", StringType, true)\r\n  ) ++ \r\n  (1 to 25).map(i \u003d\u003e StructField(s\"ACTIVA_H$i\", DoubleType, true)) ++\r\n  (1 to 25).map(i \u003d\u003e StructField(s\"REACTIVA_H$i\", DoubleType, true))\r\n)\r\n\r\nval dfBruto \u003d spark.read\r\n  .option(\"header\", \"false\")\r\n  .option(\"ignoreLeadingWhiteSpace\", \"true\")\r\n  .option(\"delimiter\",\",\")\r\n  .schema(schemaDefinition)\r\n  .csv(\"file:///opt/spark/data/endesaAgregada\")\r\n\r\n// Eliminamos H25 y las reactivas\r\nval columnasABorrar \u003d Seq(\"ACTIVA_H25\") ++ (1 to 25).map(i \u003d\u003e s\"REACTIVA_H$i\")\r\nval dfSeleccionado \u003d dfBruto.drop(columnasABorrar: _*).na.drop()\r\n\r\nprintln(s\"Total registros tras limpieza inicial: ${dfSeleccionado.count()}\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:16:20.926",
+      "progress": 0,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Total registros tras limpieza inicial: 1173369\n\u001b[1m\u001b[34mschemaDefinition\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.types.StructType\u001b[0m \u003d StructType(StructField(IDENTIFICADOR,StringType,true),StructField(ANOMES,IntegerType,true),StructField(CNAE,StringType,true),StructField(PRODUCTO,StringType,true),StructField(MERCADO,StringType,true),StructField(ACTIVA_H1,DoubleType,true),StructField(ACTIVA_H2,DoubleType,true),StructField(ACTIVA_H3,DoubleType,true),StructField(ACTIVA_H4,DoubleType,true),StructField(ACTIVA_H5,DoubleType,true),StructField(ACTIVA_H6,DoubleType,true),StructField(ACTIVA_H7,DoubleType,true),StructField(ACTIVA_H8,DoubleType,true),StructField(ACTIVA_H9,DoubleType,true),StructField(ACTIVA_H10,DoubleType,true),StructField(ACTIVA_H11,DoubleType,true),StructField(ACTIVA_H12,DoubleType,true),StructField(ACTIVA_H13,DoubleType,true),St...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d0"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d1"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776701738780_673731395",
+      "id": "paragraph_1776701738780_673731395",
+      "dateCreated": "2026-04-20 16:15:38.780",
+      "dateStarted": "2026-04-21 10:16:20.949",
+      "dateFinished": "2026-04-21 10:16:40.469",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val columnasActiva \u003d (1 to 24).map(i \u003d\u003e s\"ACTIVA_H$i\").toArray\r\n\r\nval assembler \u003d new VectorAssembler()\r\n  .setInputCols(columnasActiva)\r\n  .setOutputCol(\"featuresO\")\r\n\r\nval scaler \u003d new StandardScaler()\r\n  .setInputCol(\"featuresO\")\r\n  .setOutputCol(\"features\")\r\n  .setWithStd(true)\r\n  .setWithMean(true)\r\n\r\nval labelIndexer \u003d new StringIndexer()\r\n  .setInputCol(\"MERCADO\")\r\n  .setOutputCol(\"label\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:17:22.242",
+      "progress": 0,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mcolumnasActiva\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(ACTIVA_H1, ACTIVA_H2, ACTIVA_H3, ACTIVA_H4, ACTIVA_H5, ACTIVA_H6, ACTIVA_H7, ACTIVA_H8, ACTIVA_H9, ACTIVA_H10, ACTIVA_H11, ACTIVA_H12, ACTIVA_H13, ACTIVA_H14, ACTIVA_H15, ACTIVA_H16, ACTIVA_H17, ACTIVA_H18, ACTIVA_H19, ACTIVA_H20, ACTIVA_H21, ACTIVA_H22, ACTIVA_H23, ACTIVA_H24)\n\u001b[1m\u001b[34massembler\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.feature.VectorAssembler\u001b[0m \u003d VectorAssembler: uid\u003dvecAssembler_d4e005c5b669, handleInvalid\u003derror, numInputCols\u003d24\n\u001b[1m\u001b[34mscaler\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.feature.StandardScaler\u001b[0m \u003d stdScal_4c6e2f2cac92\n\u001b[1m\u001b[34mlabelIndexer\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.feature.StringIndexer\u001b[0m \u003d strIdx_e1e038f7ccbe\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776701774291_2026169342",
+      "id": "paragraph_1776701774291_2026169342",
+      "dateCreated": "2026-04-20 16:16:14.291",
+      "dateStarted": "2026-04-21 10:17:22.264",
+      "dateFinished": "2026-04-21 10:17:23.424",
+      "status": "FINISHED"
+    },
+    {
+      "text": "////////// NO HACE FALTA EJECUTARLO\r\n\r\n// Encontrar el mejor K\r\n\r\nval evaluadorCluster \u003d new ClusteringEvaluator()\r\n\r\n// ---\u003e 4.1 Búsqueda y Evaluación de K-Means\r\nprintln(\"\u003e\u003e Evaluando Iteraciones para K-Means...\")\r\nfor (k \u003c- 2 to 5) {\r\n  val kmeans \u003d new KMeans().setK(k).setSeed(1L).setFeaturesCol(\"features\")\r\n  val pipelineKMeans \u003d new Pipeline().setStages(Array(assembler, scaler, kmeans))\r\n  val preds \u003d pipelineKMeans.fit(dfSeleccionado).transform(dfSeleccionado)\r\n  val silhouette \u003d evaluadorCluster.evaluate(preds)\r\n  println(s\"  [*] Silhouette K-Means (K\u003d$k): $silhouette\")\r\n}",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:17:52.412",
+      "progress": 66,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003e\u003e Evaluando Iteraciones para K-Means...\n  [*] Silhouette K-Means (K\u003d2): 0.960978296048756\n  [*] Silhouette K-Means (K\u003d3): 0.894580741670558\n  [*] Silhouette K-Means (K\u003d4): 0.7254370347336446\n  [*] Silhouette K-Means (K\u003d5): 0.7081552671815987\n\u001b[1m\u001b[34mevaluadorCluster\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.evaluation.ClusteringEvaluator\u001b[0m \u003d ClusteringEvaluator: uid\u003dcluEval_1a39a89b12d9, metricName\u003dsilhouette, distanceMeasure\u003dsquaredEuclidean\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d2"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d3"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d4"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d5"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d6"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d7"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d9"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d11"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d12"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d13"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d14"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d15"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d16"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d17"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d18"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d19"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d20"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d21"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d22"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d23"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d24"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d25"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d26"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d27"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d28"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d29"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d30"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d31"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d32"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d33"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d34"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d35"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d36"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d37"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d38"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d39"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d40"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d41"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d42"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d43"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d44"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d45"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d46"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d47"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d48"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d49"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d50"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d51"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d52"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d53"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d54"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d55"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d56"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d57"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d58"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d59"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d60"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d61"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d62"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d63"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d64"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d65"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d66"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d67"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d68"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d69"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d70"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d71"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d72"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d73"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d74"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d75"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d76"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d77"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d78"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d79"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d80"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d81"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d82"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d83"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d84"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d85"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d86"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d87"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d88"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d89"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d90"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d91"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d92"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d93"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d94"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d95"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d96"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d97"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d98"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d99"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d100"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d101"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d102"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d103"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d104"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d105"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d106"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d107"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d108"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d109"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d110"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d111"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d112"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d113"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d114"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d115"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d116"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d117"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d118"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d119"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d120"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d121"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d122"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d123"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d124"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d125"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d126"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d127"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d128"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d129"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d130"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d131"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d132"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d133"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d134"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d135"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d136"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d137"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d138"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d139"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d140"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d141"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d142"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d143"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d144"
+            },
+            {
+              "jobUrl": "http://9fd5d99542e2:4040/jobs/job?id\u003d145"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776701820982_1423093213",
+      "id": "paragraph_1776701820982_1423093213",
+      "dateCreated": "2026-04-20 16:17:00.982",
+      "dateStarted": "2026-04-20 16:17:42.119",
+      "dateFinished": "2026-04-20 16:23:58.224",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// Entrenamos con K\u003d2 porque es el k que mejores resultados ha obtenido\r\nval kmeansFinal \u003d new KMeans().setK(2).setSeed(1L).setFeaturesCol(\"features\")\r\nval modeloKMeansFinal \u003d new Pipeline().setStages(Array(assembler, scaler, kmeansFinal)).fit(dfSeleccionado)\r\nval dfClusters \u003d modeloKMeansFinal.transform(dfSeleccionado)",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:21:28.257",
+      "progress": 25,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mkmeansFinal\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.clustering.KMeans\u001b[0m \u003d kmeans_67c075dbf730\n\u001b[1m\u001b[34mmodeloKMeansFinal\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.PipelineModel\u001b[0m \u003d pipeline_a72acae83a79\n\u001b[1m\u001b[34mdfClusters\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [IDENTIFICADOR: string, ANOMES: int ... 30 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d37"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d38"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d39"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d40"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d41"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d42"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d43"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d44"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d45"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d46"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d47"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d48"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d49"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d50"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d51"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d52"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d53"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d54"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d55"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d56"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d57"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d58"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d59"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d60"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d61"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d62"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d63"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d64"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d65"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d66"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d67"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d68"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d69"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776701852867_911178448",
+      "id": "paragraph_1776701852867_911178448",
+      "dateCreated": "2026-04-20 16:17:32.867",
+      "dateStarted": "2026-04-21 10:21:28.286",
+      "dateFinished": "2026-04-21 10:22:30.228",
+      "status": "FINISHED"
+    },
+    {
+      "text": "println(\"\u003e\u003e Conteo K-Means (K\u003d2):\")\r\ndfClusters.groupBy(\"prediction\").count().show()",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:22:42.397",
+      "progress": 66,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003e\u003e Conteo K-Means (K\u003d2):\n+----------+-------+\n|prediction|  count|\n+----------+-------+\n|         1|1151678|\n|         0|  21691|\n+----------+-------+\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d70"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d71"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776702523773_1091357547",
+      "id": "paragraph_1776702523773_1091357547",
+      "dateCreated": "2026-04-20 16:28:43.794",
+      "dateStarted": "2026-04-21 10:22:42.459",
+      "dateFinished": "2026-04-21 10:22:54.028",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// \u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\r\n// CELDA 4.2: EXPLICABILIDAD Y SEGUNDO MÉTODO NO SUPERV. (PCA)\r\n// \u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\r\nprintln(\"\u003e\u003e Evaluando e integrando Análisis de Componentes Principales (PCA k\u003d2)...\")\r\nval pca \u003d new PCA().setInputCol(\"features\").setOutputCol(\"pcaFeatures\").setK(2)\r\nval dfPCA \u003d pca.fit(dfClusters).transform(dfClusters)\r\n\r\n// Extraemos los vectores para poder graficar X e Y planos en Zeppelin\r\nval extractPC1 \u003d udf((v: Vector) \u003d\u003e v(0))\r\nval extractPC2 \u003d udf((v: Vector) \u003d\u003e v(1))\r\n\r\nval plotScatterPCA \u003d dfPCA.select(\r\n  extractPC1(col(\"pcaFeatures\")).alias(\"PC1\"),\r\n  extractPC2(col(\"pcaFeatures\")).alias(\"PC2\"),\r\n  col(\"prediction\").cast(StringType).alias(\"Cluster\") // Convertido a String para forzar categoría en Zeppelin\r\n)\r\n\r\n// Gráfica del perfil medio de horas (Líneas)\r\nval dfPromedios \u003d dfClusters.groupBy(\"prediction\").agg(\r\n    avg(\"ACTIVA_H1\").alias(\"H1\"), avg(\"ACTIVA_H2\").alias(\"H2\"), avg(\"ACTIVA_H3\").alias(\"H3\"),\r\n    avg(\"ACTIVA_H4\").alias(\"H4\"), avg(\"ACTIVA_H5\").alias(\"H5\"), avg(\"ACTIVA_H6\").alias(\"H6\"),\r\n    avg(\"ACTIVA_H7\").alias(\"H7\"), avg(\"ACTIVA_H8\").alias(\"H8\"), avg(\"ACTIVA_H9\").alias(\"H9\"),\r\n    avg(\"ACTIVA_H10\").alias(\"H10\"),avg(\"ACTIVA_H11\").alias(\"H11\"),avg(\"ACTIVA_H12\").alias(\"H12\"),\r\n    avg(\"ACTIVA_H13\").alias(\"H13\"),avg(\"ACTIVA_H14\").alias(\"H14\"),avg(\"ACTIVA_H15\").alias(\"H15\"),\r\n    avg(\"ACTIVA_H16\").alias(\"H16\"),avg(\"ACTIVA_H17\").alias(\"H17\"),avg(\"ACTIVA_H18\").alias(\"H18\"),\r\n    avg(\"ACTIVA_H19\").alias(\"H19\"),avg(\"ACTIVA_H20\").alias(\"H20\"),avg(\"ACTIVA_H21\").alias(\"H21\"),\r\n    avg(\"ACTIVA_H22\").alias(\"H22\"),avg(\"ACTIVA_H23\").alias(\"H23\"),avg(\"ACTIVA_H24\").alias(\"H24\")\r\n)\r\n\r\nval plotLineas \u003d dfPromedios.selectExpr(\r\n  \"prediction as Cluster\",\r\n  \"stack(24, 1, H1, 2, H2, 3, H3, 4, H4, 5, H5, 6, H6, 7, H7, 8, H8, 9, H9, 10, H10, 11, H11, 12, H12, 13, H13, 14, H14, 15, H15, 16, H16, 17, H17, 18, H18, 19, H19, 20, H20, 21, H21, 22, H22, 23, H23, 24, H24) as (Hora, ConsumoMedio)\"\r\n).withColumn(\"Cluster\", col(\"Cluster\").cast(StringType))\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:36:35.891",
+      "progress": 100,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003e\u003e Evaluando e integrando Análisis de Componentes Principales (PCA k\u003d2)...\n\u001b[1m\u001b[34mpca\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.feature.PCA\u001b[0m \u003d pca_d62f2ee36a72\n\u001b[1m\u001b[34mdfPCA\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [IDENTIFICADOR: string, ANOMES: int ... 31 more fields]\n\u001b[1m\u001b[34mextractPC1\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.expressions.UserDefinedFunction\u001b[0m \u003d SparkUserDefinedFunction($Lambda$5305/0x0000000841dcb840@6af19dee,DoubleType,List(Some(class[value[0]: vector])),Some(class[value[0]: double]),None,false,true)\n\u001b[1m\u001b[34mextractPC2\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.expressions.UserDefinedFunction\u001b[0m \u003d SparkUserDefinedFunction($Lambda$5306/0x0000000841dcc840@114534ff,DoubleType,List(Some(class[value[0]: vector])),Some(class[value[0]: double]),None,false,true)\n\u001b[1m\u001b[34mplotScatterPCA\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [PC1: double...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d81"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d82"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d83"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d84"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d85"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776702869020_217008129",
+      "id": "paragraph_1776702869020_217008129",
+      "dateCreated": "2026-04-20 16:34:29.026",
+      "dateStarted": "2026-04-21 10:36:35.938",
+      "dateFinished": "2026-04-21 10:37:08.465",
+      "status": "FINISHED"
+    },
+    {
+      "text": "println(\"\u003e\u003e INSTRUCCIONES GRÁFICAS PARA ZEPPELIN:\")\r\nprintln(\"   A) PERFIL MEDIO (Curva): Crea celda con \u0027z.show(plotLineas)\u0027. Elige Line Chart.\")\r\nprintln(\"      Configura -\u003e xAxis: Hora | yAxis: ConsumoMedio | group: Cluster\")\r\nz.show(plotLineas)",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 11:07:47.121",
+      "progress": 25,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "editorHide": false,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "scatterChart",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "scatterChart": {},
+                "stackedAreaChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "style": "stack"
+                }
+              },
+              "keys": [
+                {
+                  "name": "prediction",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "H1",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ]
+            }
+          },
+          "1": {
+            "graph": {
+              "mode": "lineChart",
+              "height": 419.8000030517578,
+              "optionOpen": false,
+              "setting": {
+                "lineChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "forceY": false,
+                  "lineWithFocus": false,
+                  "isDateFormat": false,
+                  "dateFormat": ""
+                },
+                "stackedAreaChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "style": "stack"
+                },
+                "scatterChart": {
+                  "yAxis": {
+                    "name": "ConsumoMedio",
+                    "index": 2.0,
+                    "aggr": "sum"
+                  },
+                  "xAxis": {
+                    "name": "Hora",
+                    "index": 1.0,
+                    "aggr": "sum"
+                  },
+                  "group": {
+                    "name": "Cluster",
+                    "index": 0.0,
+                    "aggr": "sum"
+                  }
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "stacked": false
+                }
+              },
+              "keys": [
+                {
+                  "name": "Hora",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [
+                {
+                  "name": "Cluster",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "values": [
+                {
+                  "name": "ConsumoMedio",
+                  "index": 2.0,
+                  "aggr": "avg"
+                }
+              ]
+            }
+          }
+        },
+        "enabled": true,
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003e\u003e INSTRUCCIONES GRÁFICAS PARA ZEPPELIN:\n   A) PERFIL MEDIO (Curva): Crea celda con \u0027z.show(plotLineas)\u0027. Elige Line Chart.\n      Configura -\u003e xAxis: Hora | yAxis: ConsumoMedio | group: Cluster\n"
+          },
+          {
+            "type": "TABLE",
+            "data": "Cluster\tHora\tConsumoMedio\n1\t1\t195.54091334557054\n1\t2\t152.80852677571335\n1\t3\t131.32130291626652\n1\t4\t121.1640844923668\n1\t5\t116.78360314254505\n1\t6\t117.60665307490461\n1\t7\t129.36402145391332\n1\t8\t163.6831080388789\n1\t9\t189.880343724548\n1\t10\t206.25285192562504\n1\t11\t225.48141581240588\n1\t12\t228.54541156469082\n1\t13\t235.10496814213695\n1\t14\t257.02361554184415\n1\t15\t266.2304450549546\n1\t16\t250.38336236343838\n1\t17\t240.1779829084171\n1\t18\t246.4288972264817\n1\t19\t260.6518618919524\n1\t20\t278.7904362156783\n1\t21\t307.18859047407346\n1\t22\t337.6212791248943\n1\t23\t313.00367637482003\n1\t24\t256.74539671679065\n0\t1\t2425.5267853026603\n0\t2\t2227.737587017657\n0\t3\t2112.627426121433\n0\t4\t2041.281568392421\n0\t5\t2019.1615647042552\n0\t6\t2055.6117283666035\n0\t7\t2087.0151214789544\n0\t8\t2027.0607855792725\n0\t9\t2164.6750495597253\n0\t10\t2489.3381817343598\n0\t11\t2734.187036097921\n0\t12\t2730.150408003319\n0\t13\t2688.8094370937256\n0\t14\t2634.8371674888203\n0\t15\t2338.9071043289846\n0\t16\t2202.0960997648795\n0\t17\t2215.724263519432\n0\t18\t2401.7446406343643\n0\t19\t2616.5698907380943\n0\t20\t2798.935572357199\n0\t21\t2769.0253100364207\n0\t22\t2777.251832557282\n0\t23\t2826.762781798903\n0\t24\t2665.1035913512515\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d86"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d87"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776766979785_489357596",
+      "id": "paragraph_1776766979785_489357596",
+      "dateCreated": "2026-04-21 10:22:59.821",
+      "dateStarted": "2026-04-21 10:37:21.953",
+      "dateFinished": "2026-04-21 10:37:38.129",
+      "status": "FINISHED"
+    },
+    {
+      "text": "println(\"   B) MAPA CLUSTERS 2D: Crea celda con \u0027z.show(plotScatterPCA)\u0027. Elige Scatter Chart.\")\r\nprintln(\"      Configura -\u003e xAxis: PC1 | yAxis: PC2 | group: Cluster\")\r\nz.show(plotScatterPCA)",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 10:44:54.184",
+      "progress": 100,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "scatterChart",
+              "height": 300.0,
+              "optionOpen": true,
+              "setting": {
+                "scatterChart": {
+                  "xAxis": {
+                    "name": "Cluster",
+                    "index": 0.0,
+                    "aggr": "sum"
+                  }
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "stacked": false
+                },
+                "stackedAreaChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "style": "stack"
+                }
+              },
+              "keys": [
+                {
+                  "name": "Cluster",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "PC1",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ]
+            }
+          },
+          "1": {
+            "graph": {
+              "mode": "scatterChart",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "scatterChart": {
+                  "xAxis": {
+                    "name": "PC1",
+                    "index": 0.0,
+                    "aggr": "sum"
+                  },
+                  "yAxis": {
+                    "name": "PC2",
+                    "index": 1.0,
+                    "aggr": "sum"
+                  },
+                  "group": {
+                    "name": "Cluster",
+                    "index": 2.0,
+                    "aggr": "sum"
+                  }
+                },
+                "lineChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "forceY": false,
+                  "lineWithFocus": false,
+                  "isDateFormat": false,
+                  "dateFormat": ""
+                },
+                "stackedAreaChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "style": "stack"
+                }
+              },
+              "keys": [
+                {
+                  "name": "PC1",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "PC2",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ]
+            }
+          }
+        },
+        "enabled": true,
+        "editorSetting": {}
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "   B) MAPA CLUSTERS 2D: Crea celda con \u0027z.show(plotScatterPCA)\u0027. Elige Scatter Chart.\n      Configura -\u003e xAxis: PC1 | yAxis: PC2 | group: Cluster\n"
+          },
+          {
+            "type": "TABLE",
+            "data": "PC1\tPC2\tCluster\n-3.8574455009641455\t0.8005735043237684\t1\n2.413237140422476\t-0.30301837522575\t1\n0.9591553681215536\t-0.20438462394127507\t1\n-0.39641924823125096\t0.09998699911905802\t1\n2.024258296477589\t-0.32090750218715824\t1\n1.0284083203052066\t-0.16385397754105352\t1\n-0.10842879038951801\t0.10300355735834092\t1\n1.794542693415177\t-0.23330624341155176\t1\n0.25036811116461594\t0.7770474278191479\t1\n1.6763476173297496\t-0.34408060423072456\t1\n1.5512604690329266\t-0.3504115566282063\t1\n2.280997005018314\t-0.3056918240368593\t1\n1.6607703245785244\t0.01993208195508254\t1\n-1.0592676092982485\t-1.5354022379596857\t1\n0.9571638030387966\t-0.03249345187042142\t1\n-2.1342283196952523\t0.5781190383030433\t1\n1.6302649585298117\t-0.10893800394351098\t1\n1.403761998385738\t-0.4593813383082222\t1\n1.123458344603927\t-0.24468130717228134\t1\n1.8845418780570766\t-0.33999575022365736\t1\n2.3239161912497193\t-0.3037464740234841\t1\n0.45749466770211333\t0.4307477914359012\t1\n0.09998952458036692\t0.029532999900429534\t1\n1.1560274210004997\t-0.19770327716939026\t1\n-0.2418840037538392\t-0.556166593751468\t1\n0.7116077591859523\t-0.3443313340561059\t1\n-4.076715419412188\t-0.6018870486626834\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.537200178469636\t-0.12148817073663355\t1\n-0.5766156088847968\t0.11152992226500018\t1\n2.413237140422476\t-0.30301837522575\t1\n2.3595379374695518\t-0.3030911572322032\t1\n-0.0702287254198581\t0.9146206755135549\t1\n1.8754928894942222\t-0.3507223055561559\t1\n2.274972385840142\t-0.2792483533636716\t1\n-2.1128268898098215\t-1.3931167485031513\t1\n-3.1403524481239153\t0.8687256418317367\t1\n0.8971454191608406\t-0.17504347953093422\t1\n1.1010758851341498\t-0.07643530601669392\t1\n1.291116852880778\t-0.3101977933249117\t1\n2.0231495332873775\t-0.21638379585778875\t1\n0.395608984908272\t-1.5924604180479183\t1\n0.17688176340254144\t-0.39208637835194327\t1\n0.9105462308396886\t0.261728479533276\t1\n0.22358935242588898\t-0.6969940333373761\t1\n2.1527614048765935\t-0.31266427788785955\t1\n0.4974574789202586\t0.020413823983861733\t1\n-0.23103556484270152\t-0.5397456660431436\t1\n2.3889256210547654\t-0.30569681111966035\t1\n0.6627304654567415\t-0.1986478076220711\t1\n1.2402758302426444\t-0.33954776598325337\t1\n-4.617881609810468\t2.133934449276807\t1\n2.2941674957665157\t-0.2552452584140231\t1\n1.4644042303782028\t-0.053504221200595246\t1\n-1.6105747234544858\t0.3757571545688395\t1\n2.413237140422476\t-0.30301837522575\t1\n1.2464965245015762\t-0.17192275186183995\t1\n0.7339644530186676\t-0.18716519528581277\t1\n1.1078268427162214\t-0.09470411093605793\t1\n1.4245299715342192\t-0.09339835320376756\t1\n1.2905994656316628\t-1.793685814106929\t1\n2.413237140422476\t-0.30301837522575\t1\n0.4946480382814885\t-0.024655420959378567\t1\n-1.7543398576692677\t-0.17154478884804997\t1\n-1.2564117757885653\t0.23414956379033566\t1\n0.9525004796353809\t-0.14298219363445813\t1\n0.12059135289423815\t-0.4936729998931277\t1\n1.7142929782977558\t-0.2403158511476305\t1\n-4.731721209434146\t-1.328187880115058\t1\n0.5131840576028593\t-0.2724142725322973\t1\n0.005662387766290822\t-0.07279288189228303\t1\n-2.9672540275001653\t-0.9938138249900396\t1\n-19.607833960420017\t-18.36211396156284\t0\n2.413237140422476\t-0.30301837522575\t1\n0.49240420315509903\t-0.23951839784586515\t1\n-3.3651522485512264\t-3.3570587035538373\t1\n0.9509992592151973\t-0.38745281472825577\t1\n-0.12822740619409767\t0.31133545600596096\t1\n0.572647890236059\t0.3056105563558527\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.9654687136884617\t3.2233290747093877\t1\n0.06162389387169359\t-0.0623108286951223\t1\n0.1669325322610913\t-0.4114965412018754\t1\n-1.0949198148046126\t0.7538989764716271\t1\n-0.24330118764730058\t-0.6722377877648553\t1\n0.9444293192594398\t-0.43329455367866576\t1\n-2.017435994282717\t0.6643507467033051\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.934129064500766\t0.42065633690943643\t1\n2.413237140422476\t-0.30301837522575\t1\n1.0658184482612698\t-0.16075100839965878\t1\n0.04880334887870493\t-0.23243878635934598\t1\n2.413237140422476\t-0.30301837522575\t1\n0.7226990496455594\t-0.012137972152164158\t1\n-14.004058674922828\t3.422318125455872\t0\n1.8076336911736892\t0.07144258232689554\t1\n-2.6042386811109997\t0.06805160592242324\t1\n0.9872223825837781\t0.05456020773738937\t1\n1.6005283684679155\t-0.34455157978464057\t1\n-1.1610587899806668\t0.4094906586346355\t1\n-1.478107673291177\t1.172750202512644\t1\n0.870936695628553\t-0.579555944612964\t1\n-12.98400113764235\t-1.0742795026795318\t0\n0.6595962725121574\t-0.30214411283952575\t1\n-0.9396508370094692\t0.7068692459614822\t1\n-1.8041236737586113\t1.3873025739027116\t1\n-0.07606976156930538\t-0.4801686525078118\t1\n1.2932043346947641\t-0.03990137834279086\t1\n2.304915704997327\t-0.273305228937633\t1\n0.545137025901698\t-0.6294235455916815\t1\n0.35126365113707153\t0.07764588153541616\t1\n1.2402429963249895\t-0.36223750812490685\t1\n-0.20898272509542068\t0.2439365750978806\t1\n0.9883258294972153\t-0.36882068175471716\t1\n2.2770546583547464\t-0.31843226868954755\t1\n0.6779222111048623\t-0.5301586190125317\t1\n-3.1366862915024747\t-0.1902101184670135\t1\n1.3493871791773036\t-0.07312833189508486\t1\n0.9844319708124001\t-0.19754724994760373\t1\n-1.137485151863415\t0.362987935601089\t1\n-1.4506072116244983\t-0.24653420651357055\t1\n1.264135386542768\t0.18535949981663968\t1\n1.2943375083134585\t-0.37909278141136543\t1\n2.413237140422476\t-0.30301837522575\t1\n0.8053019529334453\t-0.22469673569574894\t1\n1.9080685037625542\t-0.38341154034397795\t1\n-0.3597097327489881\t0.6048754594019784\t1\n1.544150162568415\t-0.356438687480599\t1\n0.1521617797152618\t0.07853974846567942\t1\n-2.1547617960977243\t1.451765402350573\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.17970838117335197\t-0.2461593308794549\t1\n-18.931966485034437\t3.3427339473672495\t0\n1.9403009635406445\t-0.3006792352816907\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.7589257442376145\t0.2800178000924847\t1\n1.230919125734558\t-0.2676953458717092\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n1.4257506770791066\t0.3598246568714113\t1\n-1.3304830746575986\t0.3255523537027586\t1\n2.2351851897208346\t-0.2833924035713396\t1\n2.0454224041827573\t-0.312318716014178\t1\n-0.05398807297925109\t0.3188925801479814\t1\n2.413237140422476\t-0.30301837522575\t1\n2.3426587832133015\t-0.3228493220604492\t1\n1.330107445723694\t-0.32861026814369243\t1\n2.413237140422476\t-0.30301837522575\t1\n0.9849520449589126\t-0.27369990504426867\t1\n2.189569355562516\t-0.3033569165201877\t1\n-1.1600500158297378\t0.9755281149487591\t1\n0.5252468942040626\t-0.009847171998314431\t1\n1.043274117158402\t-0.2739611500199011\t1\n-6.6843576950796155\t1.4328815867873834\t1\n0.6562313019909495\t0.06057418752161518\t1\n2.2857850494681884\t-0.3108724538658012\t1\n-2.5016321310219243\t1.8279502998203885\t1\n0.9837960759938442\t-0.18224304964232527\t1\n-4.202668274753754\t-1.5756522456452235\t1\n2.3272163125524017\t-0.30717074403611294\t1\n-0.24327926489925447\t-0.06544515513495984\t1\n-1.5543695093911563\t2.372534510180475\t1\n-5.5586714063015865\t2.1709175553580677\t1\n-2.4857708551661304\t2.9861003384357128\t1\n1.916720049654827\t-0.3275310566858845\t1\n2.2153618587108856\t-0.2937061727869914\t1\n2.073822174673984\t-0.3237900680274253\t1\n0.40937517446352617\t-0.6957343688974672\t1\n1.1730862951204053\t-0.27874723401616114\t1\n0.4098190616918699\t-0.253684770602519\t1\n-1.6344991704280443\t-0.05896627515425357\t1\n0.2405655195920125\t-0.43331881486377016\t1\n1.221391491763009\t-0.36754674493529\t1\n0.47951492579365096\t-0.23592000302336102\t1\n-1.1674297354195822\t0.1792993865152824\t1\n0.7793445444479398\t-0.47378089867156037\t1\n-2.250401088553124\t2.4121397585876685\t1\n1.2452365769055396\t-0.1937820629568343\t1\n2.413237140422476\t-0.30301837522575\t1\n0.371990280829264\t-0.13003036575325733\t1\n1.708542283045379\t-0.07085155786991079\t1\n0.28552525415474017\t0.17705339469651907\t1\n1.131537065612069\t-0.3483437603019696\t1\n1.1109185728586135\t-0.17849889118612702\t1\n2.413237140422476\t-0.30301837522575\t1\n1.9537184354910706\t-0.3232867847587803\t1\n-1.3877192195489576\t0.2682322585382636\t1\n1.0299759644222133\t-0.3220268843179084\t1\n-5.979117765605613\t3.306529756588478\t1\n0.9986492301259617\t0.1290179028869993\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.1693166918998548\t0.11491817309090006\t1\n-0.5301186014491525\t-0.957260857385726\t1\n2.413237140422476\t-0.30301837522575\t1\n-3.879213678001384\t5.170951512034472\t1\n1.8218755528555437\t-0.276389248414337\t1\n0.7488006546125711\t0.028493651493601498\t1\n-7.848531945235788\t4.292046660559925\t1\n1.8115578671339028\t-0.308380017132245\t1\n-1.4864180292377445\t0.6508344273385481\t1\n0.9711272041975534\t0.19116289049847365\t1\n1.3536074316375573\t-0.16310590905565475\t1\n2.173655679834954\t-0.33675690559083504\t1\n-1.3556053174387652\t0.3772048904384493\t1\n-0.0053222796296873345\t0.2831736296381797\t1\n1.199678638812576\t-0.12716918063637625\t1\n-32.92368804293408\t5.594534136593604\t0\n1.525834382730953\t-0.2746944185932162\t1\n-0.1818306320970651\t0.5812586401673596\t1\n1.8612146461442873\t-0.3246653888810505\t1\n1.3425033056822875\t-0.2100552128511911\t1\n-8.08230916454375\t-0.45694200545943214\t1\n-2.547657145866308\t1.7402741347579318\t1\n0.6559051667758384\t-0.0855351661698901\t1\n1.608743533558091\t-0.33831036493074884\t1\n0.5960280651665207\t0.18952578656264069\t1\n-2.5161014203381535\t-0.10779795999331268\t1\n1.426425232924046\t0.24412416673688506\t1\n2.3485065062231882\t-0.3086138575735914\t1\n2.2700030280833263\t-0.2804617224620117\t1\n1.8171075420138325\t-0.3234031685780988\t1\n-1.6271022593129687\t0.4084773060642775\t1\n2.413237140422476\t-0.30301837522575\t1\n0.9429693738243464\t-0.20980435284473634\t1\n-0.028153388733730488\t-0.7504584850002898\t1\n0.893768108784473\t-0.10563393349407695\t1\n-6.914816564330079\t3.86353499342985\t1\n0.7947933397717315\t-0.4849732264512193\t1\n2.0307933726117997\t-0.32356238168152157\t1\n-2.009691020909552\t2.4351069111480252\t1\n1.884277900080391\t-0.22930794556284803\t1\n0.23166348452374655\t0.17094820093295202\t1\n0.983444569989269\t-0.4032694119731554\t1\n2.413237140422476\t-0.30301837522575\t1\n1.263336702233756\t0.12360823235345011\t1\n2.1022899513600732\t-0.31466273654265653\t1\n2.1425274373201186\t-0.3030031899329467\t1\n0.5672610937810607\t0.1778355013448187\t1\n-1.2513879355161244\t-0.4151583708906475\t1\n1.130660596134021\t-0.26742523076420566\t1\n1.510154262210722\t-0.3873762894878866\t1\n2.413237140422476\t-0.30301837522575\t1\n0.7480935126468454\t-0.15810054549246577\t1\n0.11677443922287893\t-0.2508257250551103\t1\n-0.5733846703573486\t-0.3133182382013285\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.4837496511968848\t0.9085810032602358\t1\n2.037712096761292\t-0.31240598556754656\t1\n-6.657098540239804\t7.767369380130763\t1\n1.9466584005922545\t-0.20136710074323108\t1\n2.2329367235838955\t-0.31784251602873786\t1\n-1.8351944782478276\t-0.02884035907251877\t1\n-1.9514934447029362\t-0.728230439398054\t1\n2.1858612663712953\t-0.317123362093068\t1\n1.5344923425995163\t-0.15345899588319675\t1\n2.413237140422476\t-0.30301837522575\t1\n0.07694038269448765\t-0.9532416345810134\t1\n1.2537587372251866\t-0.14688729696190303\t1\n-0.01783231056515019\t0.1416459897844986\t1\n0.23722043605693705\t-0.0670212689878515\t1\n-1.092825738098891\t0.12466809011399349\t1\n-0.30382234452625356\t1.930117811425345\t1\n2.1683535654030313\t-0.3317580171139033\t1\n1.0082043454182852\t-0.5409068189399543\t1\n-0.18620748212478247\t-0.322308165327919\t1\n2.413237140422476\t-0.30301837522575\t1\n0.8732986714084723\t-0.17102863369702964\t1\n-22.52187031120926\t-26.770786990503023\t0\n0.5239507384090221\t-0.25452067087743424\t1\n-12.100075802553354\t-1.0798753497916702\t0\n-1.940953082691584\t-1.9040819392509687\t1\n1.362795611976157\t-0.18563890044459314\t1\n-8.266686548329853\t1.3421378085495403\t1\n2.413237140422476\t-0.30301837522575\t1\n2.059008067439549\t-0.22835950297419863\t1\n-1.80871110195204\t0.6141173243872567\t1\n-4.171395300572923\t-2.013031812133799\t1\n0.45330512002076\t-0.09240551591412108\t1\n2.413237140422476\t-0.30301837522575\t1\n1.384055154883758\t-0.317872787865606\t1\n-0.9781405303265084\t-0.367212147764913\t1\n1.1708568224943472\t-0.1490307452479205\t1\n1.2700759194843032\t-0.3136019121142079\t1\n0.870888989892367\t-0.30716339640678997\t1\n0.2095907296527618\t0.14366453759647646\t1\n2.3376571509341533\t-0.2947877576894756\t1\n1.6227134056069397\t-0.12418877253593559\t1\n1.7009684483581693\t-0.23084440591607694\t1\n1.452577812826178\t-0.29787294056084257\t1\n2.1345830474921725\t-0.10827110716896803\t1\n2.413237140422476\t-0.30301837522575\t1\n2.1558025151878546\t-0.22008576590477064\t1\n2.131823746563286\t-0.04780754262555171\t1\n-9.441350418619045\t5.715255320962909\t1\n2.413237140422476\t-0.30301837522575\t1\n1.705022030073264\t-0.464596840339003\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.5433177730086269\t0.10302622905611829\t1\n0.19829389068874545\t-0.03709787382378117\t1\n1.626316388198038\t-0.337201121808133\t1\n1.364711782105094\t-0.3368815321662154\t1\n1.4775555011720114\t-0.3326704387677121\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.1022529422721488\t1.1142901925741746\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.943254713363362\t-0.7512800213887789\t1\n-0.3220833575626995\t-0.34031633565810593\t1\n-0.17013914049971662\t-0.4178714216222135\t1\n1.1312378032059542\t-0.3024177864074646\t1\n-1.8620389857185813\t-0.1415017779336309\t1\n0.5398972354320819\t-0.2801027612637897\t1\n1.241325544776257\t-0.3636234407448722\t1\n2.105518009493918\t-0.3190574818744519\t1\n0.7494588874408105\t-0.18146565313116692\t1\n-0.2982427801226835\t-0.14197612192817952\t1\n2.250696335355949\t-0.3108820267636122\t1\n-4.473314934968279\t-1.4691449864404127\t1\n2.0397711420245144\t-0.30854746581787207\t1\n1.8148104315680678\t-0.7035874330302986\t1\n2.413237140422476\t-0.30301837522575\t1\n-17.20697917568912\t12.051012393005704\t0\n-1.3977089835990382\t-0.13591307457383986\t1\n0.4396572174991301\t-0.3401608338385225\t1\n-1.299271282887296\t0.5013280654437691\t1\n0.21468714237725478\t-0.44909236442468853\t1\n0.651454165784721\t0.83431988382674\t1\n1.9954949302834781\t-0.31484175038521894\t1\n-1.043109935986998\t0.7673836516008432\t1\n2.1342708405080275\t-0.27319938648532405\t1\n2.015665112514718\t-0.3052375228355909\t1\n0.09889376836895111\t0.6411333108756869\t1\n0.45708716076759814\t-0.8646823972017039\t1\n-1.1872398173304402\t0.3041597221524203\t1\n2.1246331067320807\t-0.3145305748073584\t1\n-1.9648936820636145\t-0.282534904890582\t1\n0.029826945605475854\t-0.2110208893320554\t1\n1.2938709291684436\t0.1360007354432713\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.226130793478597\t0.5568934838536369\t1\n-0.2646064812749851\t0.4682156989503645\t1\n0.28929256180334356\t-0.32964490178593403\t1\n2.413237140422476\t-0.30301837522575\t1\n2.086777246207621\t-0.3152257658338035\t1\n-2.1884363344682827\t4.594759181353573\t1\n-2.481989745817936\t0.6085554031504202\t1\n1.9843916173869967\t-0.3186772231012365\t1\n2.413237140422476\t-0.30301837522575\t1\n0.4659027760144631\t-0.11359599122666143\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.7402796264916952\t-0.009146707796198535\t1\n0.2694748837908406\t-0.40979241546012407\t1\n1.3781935241569223\t-0.07018516428857834\t1\n0.22970999396270053\t0.473769775572291\t1\n0.9336219929339176\t-0.25322985806896925\t1\n2.2660385208324194\t-0.22691813554962403\t1\n0.9157151789409028\t-0.3065374896678183\t1\n2.353590421036079\t-0.30768992901250863\t1\n1.440001609748569\t-0.37771060545572777\t1\n0.48041116010921353\t-0.11660073384150081\t1\n1.5545083574492102\t-0.2953922631337323\t1\n1.7989638111374615\t-0.3480473770830787\t1\n-0.6126405893044284\t0.6244034205671691\t1\n-0.4690274904362651\t0.0774899549567888\t1\n2.280100037789471\t-0.30853365941391636\t1\n-0.379728712455925\t0.4520711207654594\t1\n2.0633460997079434\t-0.33644598223747685\t1\n2.413237140422476\t-0.30301837522575\t1\n2.394217554332047\t-0.30380627296691665\t1\n-0.0524500716933399\t0.17845212645342046\t1\n0.4892848101429915\t-0.07536253958635833\t1\n0.8239287162487898\t-0.37907331273126116\t1\n-4.876420029037554\t2.0254956888139066\t1\n2.413237140422476\t-0.30301837522575\t1\n2.393424837461131\t-0.2801246897894584\t1\n2.009809132348143\t-0.32655570187287536\t1\n2.0439659875156355\t-0.40789870525286154\t1\n-0.16725612606361456\t-0.9549623892963833\t1\n1.175159933758023\t-0.2759170475434589\t1\n0.18836361986707584\t-0.3109577982066485\t1\n0.680275048209204\t-0.21211714574346205\t1\n-3.8822205526386147\t5.04578932670998\t1\n0.35090916531369565\t0.12462830618697286\t1\n2.0086816347259613\t-0.3207969908276393\t1\n2.413237140422476\t-0.30301837522575\t1\n0.36712441272362184\t-0.111391708539982\t1\n2.356178382151189\t-0.30538206844924987\t1\n0.7789980204868938\t0.42359066935204814\t1\n1.773332423627776\t-0.33683292715405777\t1\n1.235367458692912\t0.07501300220270463\t1\n0.7100972412778772\t-0.25063305207052017\t1\n-0.04186329386652629\t0.3133794991729824\t1\n-0.26247356204530015\t0.2648523669344888\t1\n-0.14446689955314335\t0.217928835693779\t1\n0.9229152643888373\t0.23295751595806757\t1\n-0.7660029210669768\t0.40944714177926045\t1\n-0.6796502767719527\t-0.32005447730260467\t1\n1.6426700141196542\t-0.25613676272427\t1\n-0.20802575583778055\t0.056689238479680173\t1\n0.72492106607716\t-0.9956865042191446\t1\n2.3138437382280816\t-0.28240391958135475\t1\n0.867953244212564\t-0.6851054018491084\t1\n2.413237140422476\t-0.30301837522575\t1\n1.8634568061798356\t-0.27730409085615665\t1\n-0.7969142756895956\t1.5547650281655454\t1\n-3.293331152391757\t4.503565419514768\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n1.4551608738037054\t-0.3455733622575826\t1\n-3.311063235657218\t-0.6565270811013607\t1\n2.413237140422476\t-0.30301837522575\t1\n2.221668834103924\t-0.3066839956000629\t1\n1.430639552367804\t-0.19671554676303332\t1\n0.10409164148741543\t0.0037440504820077584\t1\n-0.875220745400346\t0.028432449542075522\t1\n1.580214490961477\t-0.21959527045341343\t1\n0.10937010385050433\t-0.16904387791894412\t1\n-0.7596246520902739\t0.5311898659677409\t1\n0.6404864350584619\t0.17723848927318034\t1\n-0.4493704832782166\t-0.3455301578733777\t1\n2.0667410400597896\t-0.3962231025340144\t1\n2.413237140422476\t-0.30301837522575\t1\n1.757766529311827\t-0.3741583436711428\t1\n-1.5160696257190285\t-1.424379672642383\t1\n-0.14840561743421107\t-0.17042990287764787\t1\n-0.48594871035601117\t0.27884382687055165\t1\n-1.3418840468764235\t2.582565383117125\t1\n-0.6330192930954213\t-0.5367485945441457\t1\n0.8408087019059209\t0.08676042382702133\t1\n-2.561378694509269\t-2.017271362323793\t1\n1.2907611039567277\t-0.34889469258111866\t1\n0.39020803917930863\t-0.09149009614322708\t1\n1.871257322926385\t-0.036188938880707705\t1\n1.0348169999462853\t-0.20398570287476783\t1\n0.4110435805833499\t-0.39023385601231136\t1\n-0.3393405237141911\t-0.5406407948256396\t1\n-0.7378491605183666\t0.02756679615571209\t1\n-0.8466534059126578\t0.39296779773133156\t1\n1.3250908307572211\t-0.3949646983347124\t1\n0.6069224775175577\t0.11027110632316582\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.19895217021629136\t0.2830525915924994\t1\n1.240243012117737\t-0.022485323515652324\t1\n0.2978101610442968\t0.6255764303370597\t1\n1.4874973087698182\t-0.38134420917157036\t1\n0.9129107356288096\t0.4295245260543882\t1\n1.1883910809562437\t-0.5449962956866218\t1\n-4.784861681448906\t0.21518082838900862\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n2.194890663128673\t-0.3117580964110118\t1\n-1.9055172576432664\t0.17365277247473468\t1\n0.04207985525550039\t-0.15345951473698477\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.8534952217871796\t-0.11614979308455142\t1\n2.413001653830046\t-0.30311691057678475\t1\n0.9830912083810153\t-0.16250031768772913\t1\n0.673916652860678\t1.4072006906944878\t1\n-0.021004471810867877\t-0.0936585119361323\t1\n0.4232000059545574\t-0.5933251898151501\t1\n-0.25583951518605724\t0.1568955624010655\t1\n-2.37285518944785\t0.12522271490887607\t1\n-0.028566066630035417\t-0.44617856605455936\t1\n0.8001678816107223\t-0.21641494089917743\t1\n1.8592084430041558\t-0.3190101203951398\t1\n-11.004689064629867\t4.329180182394932\t0\n1.3200702810053853\t-0.3472488762066051\t1\n-0.17900495284475162\t-0.48549222993912994\t1\n0.4364199183473294\t-0.28923622505693997\t1\n-2.660919076947229\t1.3483243341360702\t1\n1.3635147493463777\t-0.6091767755105172\t1\n0.35398331953112994\t0.0032955510345668284\t1\n-0.3556411752557646\t0.317793926627095\t1\n1.0707972692260568\t-0.42859582567862387\t1\n1.4348102375948488\t-0.2652392356632621\t1\n1.2776001767134326\t-0.36147363181947767\t1\n1.9703196532697589\t-0.3151538600442733\t1\n0.27230524235790887\t-0.2162530959900998\t1\n2.3751979682416176\t-0.30459417070808326\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n0.1975939762388165\t-0.12943319432056563\t1\n1.3940030552310547\t0.2829897480324321\t1\n1.4630265589932332\t0.06984194097505872\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.5721418312040676\t0.2969912945372747\t1\n1.245834925544042\t0.4069292599822565\t1\n-1.312410738162632\t0.34225006452824963\t1\n-42.14073728933356\t-3.526291349022701\t0\n-0.36613622422206443\t1.711746102477979\t1\n-11.221760427406359\t-0.15564055129209117\t0\n-0.12232740076691727\t-1.3731071130272985\t1\n-1.6683572640234707\t-0.06418414058315575\t1\n-1.0656287875297672\t1.2349706975484922\t1\n-6.421891328464721\t0.8752132155024867\t1\n1.7458579673716599\t-0.33315492470018426\t1\n0.14682085483361673\t-0.7347099232211377\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.1803613679090703\t-0.9012396150810619\t1\n-0.7164417560294899\t0.058623034535511674\t1\n0.8373116202470322\t-0.3259793589559518\t1\n1.6404991393752733\t-0.24091778397645075\t1\n2.3181392099703295\t-0.3069578639315829\t1\n-6.596095442773327\t0.2968025826874704\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.48124989728873263\t0.14822202781086546\t1\n0.14307405220656616\t0.25787407184448075\t1\n1.1388626905123558\t-0.345113846666452\t1\n0.3206631426117083\t0.06879395759968386\t1\n2.0807731891684367\t-0.3136127345921155\t1\n-1.3425914127056102\t1.9790077776073138\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.2003635894960203\t-0.3732432594825941\t1\n-1.2526750585422974\t0.5170294534920032\t1\n-1.0623981107416134\t0.27937460328657804\t1\n1.9729741104468503\t-0.33215181771454755\t1\n1.600663826278858\t-0.3358861662345474\t1\n2.413237140422476\t-0.30301837522575\t1\n2.380677593087009\t-0.3053040826963317\t1\n-4.577775387775945\t2.2064134239388\t1\n-0.20528858451478416\t-0.016216937604272473\t1\n1.4997860219695542\t-0.3377095208730505\t1\n1.8970679406762212\t-0.3242492278215471\t1\n1.773067922294348\t-0.340224852251119\t1\n0.3293196092624182\t0.17582038976336875\t1\n2.0330123020582613\t-0.3158340772979758\t1\n1.2915916120748112\t-0.22602517779195644\t1\n0.5611677949875468\t-0.38023117739345047\t1\n0.8837910124678074\t-0.20814285979548963\t1\n2.413237140422476\t-0.30301837522575\t1\n0.6597057098659828\t-0.12354163841377919\t1\n-0.25937744475061925\t0.08929350563373348\t1\n1.4286464031965205\t-0.3500015634011738\t1\n0.6609361878086272\t-0.025719667566032972\t1\n2.413237140422476\t-0.30301837522575\t1\n0.8651761071901398\t0.03128826969965853\t1\n0.1916885134264253\t0.15014529212322056\t1\n0.2574056296014388\t0.07022636195240577\t1\n-0.2805369173876027\t-0.5235206283294739\t1\n-1.7827729503339418\t0.2695201950112776\t1\n0.2560349298878948\t-0.23310418903693356\t1\n2.2351072792491715\t-0.2718915652580663\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.035453880185904986\t0.7544192282036258\t1\n0.7331257806780078\t-0.5574046148933711\t1\n2.413237140422476\t-0.30301837522575\t1\n2.3902999985321967\t-0.302214160794389\t1\n1.5386500201016031\t-0.6870559361556567\t1\n-6.6233548984501045\t0.20190902698726884\t1\n0.4698121771244031\t-0.3265906180756618\t1\n-0.6334546026883949\t-0.4149592867014486\t1\n0.726039656999155\t0.08945794659980638\t1\n1.8140183702942891\t-0.18062795980155616\t1\n2.413237140422476\t-0.30301837522575\t1\n-5.305776892593905\t0.7254421398012477\t1\n1.058672829475218\t-0.20491099537328017\t1\n2.279577173122567\t-0.28222230963076667\t1\n2.413237140422476\t-0.30301837522575\t1\n0.5928616839460754\t0.08458165620097224\t1\n2.413237140422476\t-0.30301837522575\t1\n1.8044335123142272\t-0.3173693829932698\t1\n0.8333678612817912\t-0.21886603827963036\t1\n-4.211209871972458\t0.004275198468544444\t1\n1.4204604615860916\t-0.4460226837387405\t1\n-0.0166018620522008\t-0.040258192011909666\t1\n-1.0691974964004682\t-0.6332407359923571\t1\n2.413237140422476\t-0.30301837522575\t1\n1.917346648379941\t-0.324233920839392\t1\n0.668355594538531\t-0.2905431532589947\t1\n-0.4640667712844651\t0.9013123972536461\t1\n-0.07319489308763868\t0.04935039252644305\t1\n0.9552159646149588\t-0.05647725526343037\t1\n-54.36825354219436\t26.126395552052262\t0\n-0.5083492203420059\t0.953157753609383\t1\n-24.67150709263986\t22.142087804094203\t0\n-1.7222497320380736\t0.056712082224914986\t1\n-2.1587027089169117\t0.2877880861858204\t1\n-0.6582086899646136\t-0.3926073124311519\t1\n-0.06384976625770311\t0.7255658079516782\t1\n0.2531131002695365\t0.4407057702419893\t1\n0.07715874862478522\t-0.1373599173385659\t1\n-1.6025101904545758\t0.48864869075591155\t1\n-0.09582268768944134\t-0.2652006167337655\t1\n-0.36638254070583703\t0.2858385606734998\t1\n2.413237140422476\t-0.30301837522575\t1\n0.6132069667167126\t-0.4896983834156072\t1\n2.413237140422476\t-0.30301837522575\t1\n2.3769011676853413\t-0.3114321895916191\t1\n1.2708617381487495\t-0.3004824390752362\t1\n1.2061112217682806\t-0.21365593165278315\t1\n2.413237140422476\t-0.30301837522575\t1\n0.4998749718426211\t0.3802229994568701\t1\n0.7273459776716751\t0.1725352407081769\t1\n-1.9796031384211872\t0.49205220823777135\t1\n-1.5031311605623157\t1.0178660674955373\t1\n1.1361739347737223\t-0.0276851406006662\t1\n2.0417874473495514\t-0.29645016456557344\t1\n2.413237140422476\t-0.30301837522575\t1\n0.5937993763590078\t0.3874211428069383\t1\n-19.6250267870986\t2.63145759993878\t0\n1.5724029295848596\t-0.3423751891289913\t1\n0.8066916584370039\t-0.2958180237208447\t1\n-1.9206266556943346\t-0.09755783982040993\t1\n-0.10614430515894559\t0.35351483095152997\t1\n0.03219003649991078\t0.19479256014046764\t1\n-2.1936175037313337\t-1.6380003281945028\t1\n-0.4932426481073596\t0.5959232051410078\t1\n-4.054395334373039\t1.3532719924829832\t1\n1.6596949925627837\t-0.41427263755299265\t1\n0.8277059506384203\t-0.026416176751753475\t1\n0.13020688461556976\t-0.37612099857543274\t1\n2.2637432252077057\t-0.29843087210986097\t1\n-1.727187474232706\t-1.4674552769649185\t1\n-4.776491279714104\t3.371354614371726\t1\n0.5561065088165027\t0.030271796175769312\t1\n-12.58930155616553\t-0.11556978479811722\t0\n0.7530746612783726\t-0.029753815949026135\t1\n0.4832789714089554\t-0.4259085613438133\t1\n2.413237140422476\t-0.30301837522575\t1\n2.368220520725885\t-0.3063255944707371\t1\n0.6517547180973806\t-0.2974410494698038\t1\n-1.5781801478903752\t-1.5225823607228335\t1\n1.0983354340576783\t0.09007177027560481\t1\n0.11173047910387984\t-0.15342674908479373\t1\n2.413237140422476\t-0.30301837522575\t1\n0.38760067309389556\t-0.16539027547229546\t1\n1.0540194315996825\t0.061239161517914496\t1\n2.064085758504108\t-0.30691125228189214\t1\n-0.01330297028137428\t0.28133699859609207\t1\n1.4255903999602169\t-0.28966419471717997\t1\n-0.4304804262797172\t0.15650202988676076\t1\n-0.6222218720071971\t-0.14051688559137715\t1\n0.9552528026174805\t-0.3075141833952702\t1\n1.0320139840482119\t-0.29329527802354344\t1\n1.704773030072591\t-0.33500898259522044\t1\n-1.0614143883779232\t0.17194521243794464\t1\n1.8784088212073997\t-0.3234786886730415\t1\n0.7745281884168906\t-0.04778972483763582\t1\n0.2622258234325798\t-0.32624387717840936\t1\n-10.38437802960116\t1.7609639898382106\t0\n-0.1561619030118016\t-0.2570819081318562\t1\n1.4045451962888915\t-0.23331101430055734\t1\n-2.5129395694691383\t-1.5749090061718145\t1\n1.8385126103122638\t-0.34530229603808366\t1\n0.016994584704464827\t-0.6791882028878226\t1\n0.6185964786127442\t-0.4036271350964007\t1\n0.832574787017794\t-0.04712309073556204\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n-6.146420185018328\t7.012476944682497\t1\n2.113441790019177\t-0.09712868171963385\t1\n0.1726543085793628\t0.31702471226937323\t1\n0.49228791410460476\t-0.16177705531573072\t1\n1.3675214103909934\t-0.42425195841952984\t1\n2.4050930557497554\t-0.2938126942955352\t1\n-8.582722512531488\t4.16757895419837\t1\n-1.0489772383400495\t0.37388059300059223\t1\n1.4822887470308244\t-0.355089158438434\t1\n-3.8406420767043152\t-0.6156882561681359\t1\n1.0075084282298123\t-0.1871310548561365\t1\n1.806512825274476\t-0.022032159488100406\t1\n2.384707761286833\t-0.30420022183749995\t1\n2.360638051754144\t-0.308431455797882\t1\n-1.282438665837906\t0.14511985067582506\t1\n2.413237140422476\t-0.30301837522575\t1\n0.9001321456320868\t-0.29800012654273617\t1\n2.413237140422476\t-0.30301837522575\t1\n1.1619501501545115\t0.10668498171720782\t1\n0.7212772300441113\t-0.16297459460194436\t1\n-0.538077697761701\t-0.0992554317832875\t1\n-1.1019156052387482\t0.5931562333793122\t1\n-7.670505137729484\t-1.17350662222104\t1\n1.8023812018581893\t-0.35706908468321\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.34207720009043285\t0.2993493561414537\t1\n0.6259938344403043\t0.03955737115964596\t1\n0.932954177079105\t0.12085793249756148\t1\n1.2347137735828169\t-0.12714907117553104\t1\n1.7280697721765315\t-0.20583810182241247\t1\n2.2102082897083166\t-0.19771412870546543\t1\n-4.179170362031553\t2.3084944610342646\t1\n0.4142752551574249\t-0.16091522423893354\t1\n1.6421086391801782\t-0.3810439575370066\t1\n2.403727347377262\t-0.30341232409633323\t1\n-0.0948758066225978\t-0.4867012522486888\t1\n1.6389654321282674\t-0.368452821455036\t1\n2.3969336628239404\t-0.3064083578648754\t1\n0.5056457389173818\t-0.7253491482832072\t1\n0.628287996323665\t-0.07800554675922243\t1\n0.35598343655341474\t0.021655916341336658\t1\n0.6638086334685613\t-0.2134996656358813\t1\n1.3274746579292998\t-0.16308054084483073\t1\n1.5766646261758308\t-0.3421444563607308\t1\n0.6791760682536785\t0.23490273914991877\t1\n-1.1461654255471028\t0.2277653276068589\t1\n-1.2559169009879525\t1.2398093157019607\t1\n0.7029530594563637\t-0.058245664211994425\t1\n-0.14998493526436463\t-0.4070436634207529\t1\n2.413237140422476\t-0.30301837522575\t1\n1.1149933027996817\t-0.408194024555074\t1\n2.0385035124399673\t-0.23703830194659778\t1\n0.22982962795042935\t-0.3769595826024842\t1\n1.5704173314849823\t-0.23999325983069902\t1\n1.3595892448878801\t-0.20907624157915045\t1\n-0.11306863623165987\t0.019120592806577057\t1\n-1.0366504429821006\t-0.05809206044483363\t1\n0.1118659288913251\t-0.24546089268942856\t1\n2.2907119752197214\t-0.16753623262008\t1\n-2.0490964470097857\t1.0672096957655635\t1\n1.4077728484764476\t-0.35298186501530243\t1\n2.413237140422476\t-0.30301837522575\t1\n0.4369989385895638\t0.40437292586961016\t1\n1.0642661383024625\t-0.3687626284579001\t1\n2.1532499836422723\t-0.3175767287590713\t1\n0.1377434192143507\t-0.15002392722369293\t1\n1.044968552304324\t0.04065195334998229\t1\n1.3238011806237953\t-0.03590209426340621\t1\n-10.195018026131065\t1.3998092571013114\t0\n-0.09046190757162194\t0.16996792106029468\t1\n1.0806538186760688\t-0.0533988388493808\t1\n-6.4837936055338865\t0.2607393004629542\t1\n0.07782210715631967\t0.5532760369787381\t1\n0.9841390753238677\t-0.010608868534529496\t1\n-2.117838564782828\t-0.639935682283471\t1\n1.1185746980851843\t-0.3046007099820808\t1\n0.5691565697226482\t-0.3193440629123643\t1\n-0.35551642491749696\t-0.26197819555146973\t1\n1.1129504524427654\t-0.0674104796451736\t1\n-3.6487045112717533\t-0.39528242644619294\t1\n1.285475711912568\t-0.5389262231950757\t1\n0.8824888603076637\t-0.0786761767025568\t1\n1.0714421401600467\t-0.4525843307841139\t1\n2.413237140422476\t-0.30301837522575\t1\n0.019580657845251336\t0.08720293303095719\t1\n1.3897740562424372\t-0.18339141918127982\t1\n0.6644201910644274\t0.03671144030854107\t1\n0.7364131088521317\t0.3025131305532874\t1\n2.0910834089657517\t-0.3155971628419842\t1\n-0.0042614627220594805\t1.2882141094259696\t1\n0.7293947495660247\t-0.4406068324519606\t1\n1.3191719862766211\t-0.16061331286671185\t1\n1.0038440808385662\t0.057617026977317395\t1\n1.9849465944560922\t-0.5854939536877504\t1\n0.5205185574419459\t-0.1891192316999232\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.4394598738336326\t-0.18957511241229846\t1\n-1.772106987459182\t-0.19502399195171624\t1\n1.1952957229106\t-0.03706672238580197\t1\n0.6634168253799285\t-0.013543713058612919\t1\n0.653896224558529\t0.09179102885954445\t1\n0.6072816471062503\t-0.21750465609924216\t1\n2.317309799145504\t-0.30712523799022623\t1\n2.3489440528761034\t-0.3089809104467216\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.2996550187883973\t0.015153098536762069\t1\n0.603141856095043\t-0.1701918707662224\t1\n-0.26374741338257285\t0.7452713021600675\t1\n0.21539825682102784\t-0.09453916541192404\t1\n1.5985974854205156\t-0.3659338893365924\t1\n-1.2825448890945828\t0.5086281430372097\t1\n0.3121128366784814\t0.40476952979463204\t1\n-0.7611219828327347\t0.227009154472139\t1\n-1.3793701192890302\t-0.10439668880998691\t1\n1.0702744386398815\t-0.15169019687773147\t1\n1.2133536061079742\t-0.06377985824169943\t1\n2.413237140422476\t-0.30301837522575\t1\n-4.0642118347133716\t2.554686930781601\t1\n0.9087695091920156\t-0.08760444538637106\t1\n0.9689429837793271\t-0.7927009984115135\t1\n-4.176930384576768\t2.679031924770844\t1\n0.6622683967046716\t-0.2505484074435996\t1\n1.747761201780431\t-0.05485521916960145\t1\n-0.3493392999219725\t-0.18266105881362915\t1\n0.33375537981918646\t0.05843207463953521\t1\n0.768906558497416\t-0.15113311015954042\t1\n0.9052876945483547\t-0.16787032776453248\t1\n0.15078158364455987\t-0.16832437044995063\t1\n1.0576246244986778\t-0.24447150571824594\t1\n2.413237140422476\t-0.30301837522575\t1\n1.059649828454749\t-0.4676267242285334\t1\n0.4882462893521972\t0.025068938016362192\t1\n0.08346715988124105\t-0.09644898801717787\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.36320513185066616\t-0.09124577827127962\t1\n0.1161582492809303\t-0.6750565914576059\t1\n0.5715252145106295\t0.059090640768923494\t1\n2.413237140422476\t-0.30301837522575\t1\n1.0682811762342004\t-0.06129267697483465\t1\n-1.2375455769345298\t-0.4558216554804341\t1\n-1.2436584403826334\t0.33029076866502977\t1\n1.5229360622325987\t-0.3365827167266189\t1\n1.3963756163372152\t-0.09787100522967745\t1\n-0.06909397600429822\t0.19300297094930988\t1\n1.149916396262326\t-0.09932465848956368\t1\n-0.8313942446501194\t0.08098787251835411\t1\n2.054888559029914\t-0.32683655067661926\t1\n-4.3524363324980655\t-0.6612540765740108\t1\n1.3296604342654517\t-0.3127172015754182\t1\n-0.6387269728795947\t1.1544385689443624\t1\n0.33259033229502294\t0.16452754655096213\t1\n2.254455713793756\t-0.32562014111566123\t1\n0.7547589631354548\t0.3440178546139052\t1\n2.408942440215972\t-0.29788448111704263\t1\n-0.5085519726003138\t0.5290770086461061\t1\n1.7139765309993202\t-0.2714286697725826\t1\n0.4908170305674239\t-0.28515499712558295\t1\n0.9305366899807589\t0.12871781008124414\t1\n0.3096483612336197\t0.05236837613447825\t1\n-0.24410377274161407\t-0.17968888769905536\t1\n1.5297418228482855\t-0.25540982735937506\t1\n0.4879357308286188\t-0.3962357520134355\t1\n1.4810987233130475\t-0.2762231464029206\t1\n-7.6228835967578545\t-0.6141524277841094\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.810146854707949\t1.4939451225418663\t1\n1.7668175285180783\t-0.15511871038037492\t1\n-0.01474446946109039\t-0.495168680023234\t1\n0.21618788940565883\t-0.035754525110558204\t1\n-0.08535874525148673\t0.32033206615207976\t1\n0.8513056488659067\t0.8074585602299164\t1\n1.3516467733615738\t-0.35159983417730767\t1\n0.9302188791152709\t0.14011357442053604\t1\n-1.8252756940185226\t0.2795939099687202\t1\n1.6269232444626518\t-0.5367508470316888\t1\n1.0601041944298448\t0.029325882024914724\t1\n0.43129879314482744\t0.19312928175105726\t1\n0.4712018769177779\t-0.07511325579114461\t1\n2.413237140422476\t-0.30301837522575\t1\n0.2602100053858436\t-0.07932829475520625\t1\n0.04622754117411546\t0.07124729436879246\t1\n0.8327781883425893\t-0.024878054394654618\t1\n0.5110889944958078\t-0.253211854050858\t1\n2.3751979682416176\t-0.30459417070808326\t1\n0.9252009206544138\t0.032141384519319235\t1\n2.153377480981074\t-0.30652638293125056\t1\n0.795854620047265\t0.012869373095985731\t1\n1.4758107669201161\t-0.21406313267861246\t1\n-1.1988889341555\t0.45373052353949317\t1\n-0.412542184437066\t-1.0202275035284307\t1\n1.392158303273555\t-0.27723817340390766\t1\n1.206440065306774\t0.05727474724456616\t1\n0.4183278132872026\t-0.3768713515522338\t1\n1.2147967644961088\t-0.38481274291807105\t1\n0.535801829741061\t-0.10520864955630556\t1\n-4.048442940116831\t0.2244298072847413\t1\n-2.233073246174031\t0.23194402913316436\t1\n1.432700457574873\t-0.35791246847447455\t1\n-1.9392292976617889\t2.2149944394061927\t1\n1.1403338894470563\t-0.2900592979724914\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.201225810257112\t0.5496305284587102\t1\n1.2072564529229266\t-0.19351769111791836\t1\n1.8833990762527189\t-0.43355843553362866\t1\n2.1774245609383973\t-0.31225491563074964\t1\n1.0684428908053831\t-0.1982664621414124\t1\n-0.3842973767158345\t0.1747380967010937\t1\n1.1720091178500045\t-0.29478768446428977\t1\n2.413237140422476\t-0.30301837522575\t1\n0.1277915076438993\t1.279106584487659\t1\n0.5018738463471756\t-0.19110598623271996\t1\n1.7108409755034328\t-0.3461295314463118\t1\n1.5967703746776936\t-0.360922028781516\t1\n2.413237140422476\t-0.30301837522575\t1\n1.29764775775765\t-0.3528416704006694\t1\n-3.007477128037352\t-1.4606627581212772\t1\n1.4938605439569954\t-0.13099618023024456\t1\n0.14684591343780193\t0.1693683361760625\t1\n-3.7610407792163403\t0.5330490079087729\t1\n-0.19500475768983777\t0.47955483378823677\t1\n2.1057553016769677\t-0.26174529924683304\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.31582973089397265\t-0.23373617632408847\t1\n0.7721435074396014\t0.20927012529093417\t1\n1.2023982384456726\t-0.31370748315974817\t1\n-18.168983151094732\t8.7506571499284\t0\n1.410409261962026\t-0.3603604661994053\t1\n1.4480771202274751\t-0.19564205156866724\t1\n1.5619118553742564\t-0.35194793819691644\t1\n-0.7429104311158725\t-0.14785971611633533\t1\n1.1463061270876382\t-0.33565746348200043\t1\n-28.4249378432078\t19.718296828504197\t0\n1.6039433672150554\t-0.3043097174119601\t1\n0.85059524577724\t-0.13657033947872443\t1\n0.32479893090424056\t-0.22724497505807104\t1\n1.4089133757727719\t0.022981289098525932\t1\n-0.3120371609088748\t0.3196035204032567\t1\n2.413237140422476\t-0.30301837522575\t1\n1.418128376783646\t-0.3490709528573294\t1\n1.9480565575890114\t-0.32987278559682076\t1\n1.9559097012109408\t-0.278088866363363\t1\n-0.1921620676464857\t0.02308953999832019\t1\n0.7756426454489577\t-0.11134268038514811\t1\n2.413237140422476\t-0.30301837522575\t1\n1.496136298399077\t0.01469421660131098\t1\n-1.0115272001006967\t0.5928930651346929\t1\n0.9030381732740378\t-0.21120168588476423\t1\n0.26845925697379575\t-0.436639160936503\t1\n0.0042513082382655935\t-0.46653037713764556\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.9622417705259055\t1.3643956263575847\t1\n0.8728527701879771\t-0.21545190174500395\t1\n1.5343524791298941\t-0.33948404224211903\t1\n0.1903116001679445\t0.3280500570133905\t1\n-0.43954403582057\t0.5339628197212251\t1\n-0.45730398543820117\t0.07585031963799306\t1\n1.201458006890138\t-0.380709296994656\t1\n-0.8968374293569497\t1.342082004372636\t1\n-0.10012465701300909\t-0.12500486128242927\t1\n-15.758906893273117\t0.8855016332411823\t0\n-1.2445983674524572\t0.15817565075886417\t1\n1.368716097950017\t-0.3174833964979244\t1\n0.4202362045403187\t-0.38369670409800616\t1\n-0.3141786268405061\t-0.25721968633889764\t1\n0.41033998466282995\t0.08377295220062626\t1\n1.1720791879032042\t-0.19519557255228875\t1\n1.2489442340168844\t-0.48005845387515356\t1\n2.413237140422476\t-0.30301837522575\t1\n-1.7710643019551853\t0.592694288667954\t1\n-0.1282584988915562\t-0.08468258951119523\t1\n2.413237140422476\t-0.30301837522575\t1\n1.1387648664053414\t-0.24488406536487617\t1\n-5.141263800265464\t0.9451896327209041\t1\n-0.6969719757773438\t0.253574960293108\t1\n1.3768300704812826\t-0.25972129176118774\t1\n0.8172847500456484\t-0.22829415354614865\t1\n0.020038951476944566\t0.47935850195694185\t1\n0.7679953142381207\t-0.45278853262818763\t1\n2.365840639218447\t-0.29861200783104963\t1\n-5.072494943819702\t3.715893419037862\t1\n1.9189192118665372\t-0.3205332969001857\t1\n-0.148685786458006\t0.025878769746361767\t1\n-9.71595733489559\t4.559160156884532\t1\n2.0802941036381646\t-0.44318160989387717\t1\n-1.0715141445587708\t-1.4304821904614018\t1\n1.6233621708843085\t-0.40413348033284036\t1\n0.4670407233323009\t-0.27799198714558027\t1\n1.0027831538179477\t-0.36148706934947966\t1\n0.9957614572736557\t-0.09522650963998441\t1\n-0.3167751736589088\t-0.22330289466294198\t1\n1.057712371931859\t-0.2979605886179574\t1\n-3.1776723874398947\t3.873918154923503\t1\n-5.412753513943151\t-0.7603370395500042\t1\n1.2479871881776277\t-0.045324468006890925\t1\n2.413237140422476\t-0.30301837522575\t1\n0.19980292763954483\t0.4024911270559995\t1\n1.8730159722846405\t-0.32107234760358494\t1\n0.47326732448361775\t-0.18429317726244138\t1\n0.5911851705611079\t0.06639446033454874\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n0.22956032155971481\t1.404346621330109\t1\n0.7287182730685972\t0.008676875897155408\t1\n-1.065372347979863\t0.9436307594211616\t1\n0.4245992333038159\t-0.18470175281829715\t1\n2.413237140422476\t-0.30301837522575\t1\n1.9952035018229297\t-0.32277500603479936\t1\n-1.5775442739854804\t-0.0567313683784384\t1\n2.346668589105974\t-0.3057760173198333\t1\n2.413237140422476\t-0.30301837522575\t1\n-2.3948883487067425\t0.8581633306727032\t1\n0.9142588863296977\t0.00970432690277367\t1\n2.413237140422476\t-0.30301837522575\t1\n1.8323135735991825\t0.04416418496776699\t1\n2.413237140422476\t-0.30301837522575\t1\n2.413237140422476\t-0.30301837522575\t1\n0.6139076014909643\t-0.059802183206924195\t1\n1.717614223097464\t-0.34845537577498253\t1\n0.45027904035303723\t-0.39340037132026284\t1\n-3.53303016941599\t0.9433132407234266\t1\n1.7673526007878204\t-0.26654278975054546\t1\n0.8159854206036025\t-0.09107037488272916\t1\n-0.7861186017971564\t-0.2848436220476418\t1\n2.3651520218837927\t-0.31205447573504547\t1\n0.5983930925633218\t-0.7214754980674123\t1\n2.413237140422476\t-0.30301837522575\t1\n-0.31183003916553653\t-0.18680399916241228\t1\n0.3863927838375859\t-0.7509764421809737\t1\n0.8361829560652447\t-0.23039106036116377\t1\n0.3739445054241837\t-0.2798648055738324\t1\n2.413237140422476\t-0.30301837522575\t1\n2.332137246246843\t-0.3359441842013676\t1\n1.1603335437329867\t0.13947079932140155\t1\n1.3536161106789275\t-1.012424687034638\t1\n-1.489229993771387\t0.7681983690644394\t1\n-0.9156304063221962\t-0.5929975882629026\t1\n1.2468708580725174\t-0.030644938535811794\t1\n0.05866518075321525\t-0.367028021490787\t1\n1.9780629914346015\t-0.3419515010811887\t1\n0.3317320078019306\t-0.05640817025096218\t1\n0.7229689236699385\t-0.20359230874372272\t1\n2.3173169914581218\t-0.3071581236205762\t1\n2.346033449891651\t-0.29857411929112176\t1\n-12.866346819101002\t11.571510715173513\t0\n-3.7592293383194395\t0.937259467821574\t1\n0.14953497955127532\t0.6670020013059738\t1\n2.413237140422476\t-0.30301837522575\t1\n0.026818651137175832\t-0.009301586490306147\t1\n"
+          },
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"result-alert alert-warning\" role\u003d\"alert\"\u003e\u003cbutton type\u003d\"button\" class\u003d\"close\" data-dismiss\u003d\"alert\" aria-label\u003d\"Close\"\u003e\u003cspan aria-hidden\u003d\"true\"\u003e\u0026times;\u003c/span\u003e\u003c/button\u003e\u003cstrong\u003eOutput is truncated\u003c/strong\u003e to 1000 rows. Learn more about \u003cstrong\u003ezeppelin.spark.maxResult\u003c/strong\u003e\u003c/div\u003e\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d88"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776767159815_663789481",
+      "id": "paragraph_1776767159815_663789481",
+      "dateCreated": "2026-04-21 10:25:59.839",
+      "dateStarted": "2026-04-21 10:40:33.734",
+      "dateFinished": "2026-04-21 10:40:35.302",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// \u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\r\n// CELDA 5: AP. SUPERVISADO (Clasif Binaria. Pipeline ROC/AUC)\r\n// \u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\u003d\r\nval Array(trainingData, testData) \u003d dfSeleccionado.randomSplit(Array(0.7, 0.3), seed \u003d 1234L)\r\n\r\n// *ACTUALIZACIÓN ACADÉMICA*: Evaluamos con ROC-AUC en lugar de Accuracy para compensar desbalanceos\r\nval evaluadorROC \u003d new BinaryClassificationEvaluator()\r\n  .setLabelCol(\"label\")\r\n  .setRawPredictionCol(\"rawPrediction\")\r\n  .setMetricName(\"areaUnderROC\")\r\n\r\n// ---\u003e 5.1 Baseline: Regresión Logística (Línea Base Lineal)\r\nval lr \u003d new LogisticRegression().setLabelCol(\"label\").setFeaturesCol(\"features\").setMaxIter(10)\r\nval pipelineLR \u003d new Pipeline().setStages(Array(assembler, scaler, labelIndexer, lr))\r\nval lrROC \u003d evaluadorROC.evaluate(pipelineLR.fit(trainingData).transform(testData))\r\nprintln(s\"\u003e\u003e Área Bajo la Curva ROC (Logística Baseline): $lrROC\")\r\n\r\n// ---\u003e 5.2 Ensamblado: Random Forest con K-Folds Cross Validation\r\nprintln(\"\u003e\u003e Configurando K-Folds Cross Validation para Random Forest...\")\r\nval rf \u003d new RandomForestClassifier().setLabelCol(\"label\").setFeaturesCol(\"features\")\r\nval pipelineRF \u003d new Pipeline().setStages(Array(assembler, scaler, labelIndexer, rf))\r\n\r\nval paramGrid \u003d new ParamGridBuilder()\r\n  .addGrid(rf.numTrees, Array(10, 20))\r\n  //.addGrid(rf.maxDepth, Array(5, 7))\r\n  .build()\r\n\r\nval crossval \u003d new CrossValidator()\r\n  .setEstimator(pipelineRF)\r\n  .setEvaluator(evaluadorROC)\r\n  .setEstimatorParamMaps(paramGrid)\r\n  .setNumFolds(3)\r\n  .setSeed(1234L)\r\n\r\nval cvModel \u003d crossval.fit(trainingData)\r\nval cvPredicciones \u003d cvModel.transform(testData)\r\nval cvROC \u003d evaluadorROC.evaluate(cvPredicciones)\r\nprintln(s\"\u003e\u003e Área Bajo la Curva ROC (RF con K-Folds): $cvROC\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 12:21:37.028",
+      "progress": 33,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {}
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003e\u003e Área Bajo la Curva ROC (Logística Baseline): 0.5919402145782662\n\u003e\u003e Configurando K-Folds Cross Validation para Random Forest...\n\u003e\u003e Área Bajo la Curva ROC (RF con K-Folds): 0.6004921655221874\n\u001b[1m\u001b[34mtrainingData\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [IDENTIFICADOR: string, ANOMES: int ... 27 more fields]\n\u001b[1m\u001b[34mtestData\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [IDENTIFICADOR: string, ANOMES: int ... 27 more fields]\n\u001b[1m\u001b[34mevaluadorROC\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.evaluation.BinaryClassificationEvaluator\u001b[0m \u003d BinaryClassificationEvaluator: uid\u003dbinEval_aae1db4caa31, metricName\u003dareaUnderROC, numBins\u003d1000\n\u001b[1m\u001b[34mlr\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.LogisticRegression\u001b[0m \u003d logreg_ec8ad4c90078\n\u001b[1m\u001b[34mpipelineLR\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.Pipeline\u001b[0m \u003d pipeline_ca28f117f19b\n\u001b[1m\u001b[34mlrROC\u001b[0m: \u001b[1m\u001b[32mDouble\u001b[0m \u003d 0.5919402145782662\n\u001b[1m\u001b[34mrf\u001b[0m: \u001b[1m\u001b[32morg.apache.sp...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d204"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d205"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d206"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d207"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d208"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d209"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d210"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d211"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d212"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d213"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d214"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d215"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d216"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d217"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d218"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d219"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d220"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d221"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d222"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d223"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d224"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d225"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d226"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d227"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d228"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d229"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d230"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d231"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d232"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d233"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d234"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d235"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d236"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d237"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d238"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d239"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d240"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d241"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d242"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d243"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d244"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d245"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d246"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d247"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d248"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d249"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d250"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d251"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d252"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d253"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d254"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d255"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d256"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d257"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d258"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d259"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d260"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d261"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d262"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d263"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d264"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d265"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d266"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d267"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d268"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d269"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d270"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d271"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d272"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d273"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d274"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d275"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d276"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d277"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d278"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d279"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d280"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d281"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d282"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d283"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d284"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d285"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d286"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d287"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d288"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d289"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d290"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d291"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d292"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d293"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d294"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d295"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d296"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d297"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d298"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d299"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d300"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d301"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d302"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d303"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d304"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d305"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d306"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d307"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d308"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d309"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d310"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d311"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d312"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d313"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d314"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d315"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d316"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d317"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d318"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d319"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d320"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d321"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d322"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d323"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d324"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d325"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d326"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d327"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d328"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d329"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d330"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d331"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d332"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d333"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d334"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d335"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d336"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d337"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d338"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d339"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d340"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d341"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d342"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776767259895_34867995",
+      "id": "paragraph_1776767259895_34867995",
+      "dateCreated": "2026-04-21 10:27:39.896",
+      "dateStarted": "2026-04-21 12:21:37.099",
+      "dateFinished": "2026-04-21 12:39:48.440",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// ---\u003e 5.3 Explicabilidad Humana: Árbol de Decisión (Reglas de Negocio)\r\nprintln(\"\\n\u003e\u003e Entrenando un Árbol de Decisión Simple para extraer Reglas de Clasificación...\")\r\nval dt \u003d new DecisionTreeClassifier()\r\n  .setLabelCol(\"label\")\r\n  .setFeaturesCol(\"features\")\r\n  .setMaxDepth(3) // Forzamos un árbol poco profundo para que un humano lo entienda\r\n\r\nval pipelineDT \u003d new Pipeline().setStages(Array(assembler, scaler, labelIndexer, dt))\r\nval modeloEntrenadoDT \u003d pipelineDT.fit(trainingData)\r\nval dtROC \u003d evaluadorROC.evaluate(modeloEntrenadoDT.transform(testData))\r\n\r\n// Extraemos el propio modelo de Árbol (es el último paso [Stage 3] en el pipeline Array)\r\nval arbolAislado \u003d modeloEntrenadoDT.stages(3).asInstanceOf[DecisionTreeClassificationModel]\r\nprintln(s\"\u003e\u003e Área Bajo la Curva ROC (Árbol Simple): $dtROC\")\r\nprintln(\"\\n\u003d\u003d\u003d\u003d\u003d\u003d REGLAS DE DECISIÓN OBTENIDAS \u003d\u003d\u003d\u003d\u003d\u003d\")\r\nprintln(arbolAislado.toDebugString)",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 13:49:52.214",
+      "progress": 33,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {}
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\n\u003e\u003e Entrenando un Árbol de Decisión Simple para extraer Reglas de Clasificación...\n\u003e\u003e Área Bajo la Curva ROC (Árbol Simple): 0.5367042839145815\n\n\u003d\u003d\u003d\u003d\u003d\u003d REGLAS DE DECISIÓN OBTENIDAS \u003d\u003d\u003d\u003d\u003d\u003d\nDecisionTreeClassificationModel: uid\u003ddtc_af24da068889, depth\u003d2, numNodes\u003d5, numClasses\u003d2, numFeatures\u003d24\n  If (feature 11 \u003c\u003d -0.4072827541390302)\n   Predict: 0.0\n  Else (feature 11 \u003e -0.4072827541390302)\n   If (feature 11 \u003c\u003d 1.8642186183997085)\n    Predict: 0.0\n   Else (feature 11 \u003e 1.8642186183997085)\n    Predict: 1.0\n\n\u001b[1m\u001b[34mdt\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.DecisionTreeClassifier\u001b[0m \u003d dtc_af24da068889\n\u001b[1m\u001b[34mpipelineDT\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.Pipeline\u001b[0m \u003d pipeline_206fc27f9e28\n\u001b[1m\u001b[34mmodeloEntrenadoDT\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.PipelineModel\u001b[0m \u003d pipeline_206fc27f9e28\n\u001b[1m\u001b[34mdtROC\u001b[0m: \u001b[1m\u001b[32mDouble\u001b[0m \u003d 0.5367042839145815\n\u001b[1m\u001b[34marbolAislado\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.DecisionTreeClassificationModel\u001b[0m \u003d DecisionTreeClassificationModel: uid\u003ddtc_af24da068889, depth\u003d2, numNodes\u003d5, numClasses\u003d2, numFeatures\u003d24\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d404"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d405"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d406"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d407"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d408"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d409"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d410"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d411"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d412"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d413"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d414"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d415"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d416"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d417"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776772203879_313539102",
+      "id": "paragraph_1776772203879_313539102",
+      "dateCreated": "2026-04-21 11:50:03.915",
+      "dateStarted": "2026-04-21 13:49:52.447",
+      "dateFinished": "2026-04-21 13:52:45.741",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// ---\u003e 5.4 Búsqueda del Límite Matemático: Gradient-Boosted Trees (GBT)\r\nprintln(\"\\n\u003e\u003e Entrenando Gradient-Boosted Trees (GBT) para exprimir el rendimiento analítico...\")\r\nval gbt \u003d new GBTClassifier()\r\n  .setLabelCol(\"label\")\r\n  .setFeaturesCol(\"features\")\r\n  .setMaxIter(10) // Limitado para agilidad local\r\n  .setMaxDepth(5)\r\n\r\nval pipelineGBT \u003d new Pipeline().setStages(Array(assembler, scaler, labelIndexer, gbt))\r\nval gbtROC \u003d evaluadorROC.evaluate(pipelineGBT.fit(trainingData).transform(testData))\r\nprintln(s\"\u003e\u003e Área Bajo la Curva ROC (Gradient-Boosted Trees): $gbtROC\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 13:23:18.258",
+      "progress": 33,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {}
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\n\u003e\u003e Entrenando Gradient-Boosted Trees (GBT) para exprimir el rendimiento analítico...\n\u003e\u003e Área Bajo la Curva ROC (Gradient-Boosted Trees): 0.6278461957529812\n\u001b[1m\u001b[34mgbt\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.GBTClassifier\u001b[0m \u003d gbtc_7150fe82bfea\n\u001b[1m\u001b[34mpipelineGBT\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.Pipeline\u001b[0m \u003d pipeline_a30e3af61894\n\u001b[1m\u001b[34mgbtROC\u001b[0m: \u001b[1m\u001b[32mDouble\u001b[0m \u003d 0.6278461957529812\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d343"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d344"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d345"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d346"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d347"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d348"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d349"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d350"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d351"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d352"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d353"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d354"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d355"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d356"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d357"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d358"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d359"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d360"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d361"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d362"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d363"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d364"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d365"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d366"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d367"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d368"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d369"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d370"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d371"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d372"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d373"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d374"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d375"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d376"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d377"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d378"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d379"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d380"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d381"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d382"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d383"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d384"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d385"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d386"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d387"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d388"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d389"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d390"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d391"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d392"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d393"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d394"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d395"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d396"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d397"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d398"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d399"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d400"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d401"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d402"
+            },
+            {
+              "jobUrl": "http://be81e4213a7c:4040/jobs/job?id\u003d403"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776772217945_1321153330",
+      "id": "paragraph_1776772217945_1321153330",
+      "dateCreated": "2026-04-21 11:50:17.945",
+      "dateStarted": "2026-04-21 13:23:18.490",
+      "dateFinished": "2026-04-21 13:27:57.740",
+      "status": "FINISHED"
+    },
+    {
+      "text": "",
+      "user": "anonymous",
+      "dateUpdated": "2026-04-21 12:04:29.073",
+      "progress": 0,
+      "config": {
+        "colWidth": 12.0,
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true,
+        "editorSetting": {}
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1776773059004_89043803",
+      "id": "paragraph_1776773059004_89043803",
+      "dateCreated": "2026-04-21 12:04:19.022",
+      "status": "READY"
+    }
+  ],
+  "name": "Entregable 4",
+  "id": "2MPCGTMTR",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.12.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false
+  },
+  "info": {}
+}
