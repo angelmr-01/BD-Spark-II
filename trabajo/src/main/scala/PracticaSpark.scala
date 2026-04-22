@@ -1,175 +1,163 @@
 package es.upm.bd
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.functions._
+import org.apache.spark.ml.feature.{VectorAssembler, StandardScaler, StringIndexer, PCA}
+import org.apache.spark.ml.clustering.KMeans
+import org.apache.spark.ml.evaluation.ClusteringEvaluator
+import org.apache.spark.ml.classification.{RandomForestClassifier, LogisticRegression, DecisionTreeClassifier, DecisionTreeClassificationModel, GBTClassifier}
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.ml.Pipeline
 
-object PracticaSpark {
-
-  // DEFINICIÓN DE CLASE PARA API TIPADA
-  case class ConsumoElectrico(
-    IDENTIFICADOR: String, ANOMES: Int, CNAE: String, PRODUCTO: String, MERCADO: String,
-    ACTIVA_H1: Double, ACTIVA_H2: Double, ACTIVA_H3: Double, ACTIVA_H4: Double, ACTIVA_H5: Double,
-    ACTIVA_H6: Double, ACTIVA_H7: Double, ACTIVA_H8: Double, ACTIVA_H9: Double, ACTIVA_H10: Double,
-    ACTIVA_H11: Double, ACTIVA_H12: Double, ACTIVA_H13: Double, ACTIVA_H14: Double, ACTIVA_H15: Double,
-    ACTIVA_H16: Double, ACTIVA_H17: Double, ACTIVA_H18: Double, ACTIVA_H19: Double, ACTIVA_H20: Double,
-    ACTIVA_H21: Double, ACTIVA_H22: Double, ACTIVA_H23: Double, ACTIVA_H24: Double
-  )
+object PracticaSparkML {
 
   def main(args: Array[String]): Unit = {
 
-    // 0. ARRANQUE DEL CLÚSTER
     val spark = SparkSession.builder()
-      .appName("Despliegue_Consumo_Electrico_Entrega3")
-      // .master("local[*]") // Descomentar solo si se prueba dentro de IntelliJ localmente
+      .appName("Analisis_Consumo_Electrico_Final")
+      // .master("local[*]")
       .getOrCreate()
       
-    import spark.implicits._
-
     spark.sparkContext.setLogLevel("WARN")
 
     println("=====================================================")
-    println(" INICIANDO PIPELINE DE DATOS")
+    println(" INICIANDO PIPELINE DE MACHINE LEARNING ")
     println("=====================================================")
 
     // ==============================================================================
-    // BLOQUE 1: RDD
+    // FASE 1: CARGA Y LIMPIEZA DE DATOS (DataFrames)
     // ==============================================================================
-    println("\n--> EJECUTANDO BLOQUE 1 (RDD)...")
-    val rddCrudo = spark.sparkContext.textFile("file:///opt/spark/data/endesaAgregada")
-    
-    val rddSeleccionado = rddCrudo.map(linea => {
-      val cols = linea.split(",")
-      val identificador = cols(0).trim
-      val anomes = cols(1).trim
-      val cnae = cols(2).trim
-      val producto = cols(3).trim
-      val mercado = cols(4).trim
-      val consumosArray = cols.slice(5, 29).map(_.trim.toDouble)
-      (identificador, anomes, cnae, producto, mercado, consumosArray)
-    })
-
-    val rddLimpio = rddSeleccionado.filter(caso => caso._3.nonEmpty && caso._4.nonEmpty && caso._6.forall(_ >= 0))
-
-    val rddProcesado = rddLimpio.map(caso => {
-      val (id, an, cn, pr, me, arr) = caso
-      val totalActiva = arr.sum
-      (id, an, cn, pr, me, totalActiva)
-    })
-
-    val rddTotalPorMercado = rddProcesado
-      .map(x => (x._5, x._6))
-      .reduceByKey(_ + _)
-    // Convertimos a DF sólo para mostrar un snippet tabular limpio en consola
-    rddTotalPorMercado.toDF("Tipo_Mercado", "Suma_Activa").show(5)
-
-
-    // ==============================================================================
-    // BLOQUE 2: DATAFRAMES (API NO TIPADA)
-    // ==============================================================================
-    println("\n--> EJECUTANDO BLOQUE 2 (DATAFRAMES)...")
     val schemaDefinition = StructType(
-        (Array(
-          StructField("IDENTIFICADOR", StringType, true),
-          StructField("ANOMES", IntegerType, true),
-          StructField("CNAE", StringType, true),
-          StructField("PRODUCTO", StringType, true),
-          StructField("MERCADO", StringType, true)
-        ) ++ 
-        (1 to 25).map(i => StructField(s"ACTIVA_H$i", DoubleType, true)) ++
-        (1 to 25).map(i => StructField(s"REACTIVA_H$i", DoubleType, true))).toArray
+      Array(
+        StructField("IDENTIFICADOR", StringType, true),
+        StructField("ANOMES", IntegerType, true),
+        StructField("CNAE", StringType, true),
+        StructField("PRODUCTO", StringType, true),
+        StructField("MERCADO", StringType, true)
+      ) ++ 
+      (1 to 25).map(i => StructField(s"ACTIVA_H$i", DoubleType, true)) ++
+      (1 to 25).map(i => StructField(s"REACTIVA_H$i", DoubleType, true))
     )
 
     val dfBruto = spark.read
-        .option("header", "false")
-        .option("ignoreLeadingWhiteSpace", "true")
-        .option("delimiter",",")
-        .schema(schemaDefinition)
-        .csv("file:///opt/spark/data/endesaAgregada")
+      .option("header", "false")
+      .option("ignoreLeadingWhiteSpace", "true")
+      .option("delimiter",",")
+      .schema(schemaDefinition)
+      .csv("file:///opt/spark/data/endesaAgregada")
 
     val columnasABorrar = Seq("ACTIVA_H25") ++ (1 to 25).map(i => s"REACTIVA_H$i")
-    val dfSeleccionado = dfBruto.drop(columnasABorrar: _*)
+    val dfFiltrado = dfBruto.drop(columnasABorrar: _*).na.drop()
+
+
+    // ==============================================================================
+    // FASE 2: PREPROCESAMIENTO COMUN
+    // ==============================================================================
+    val columnasActiva = (1 to 24).map(i => s"ACTIVA_H$i").toArray
+    val assembler = new VectorAssembler()
+      .setInputCols(columnasActiva)
+      .setOutputCol("featuresO")
+
+    val scaler = new StandardScaler()
+      .setInputCol("featuresO")
+      .setOutputCol("features")
+      .setWithStd(true)
+      .setWithMean(true)
+
+    val labelIndexer = new StringIndexer()
+      .setInputCol("MERCADO")
+      .setOutputCol("label")
+
+
+    // ==============================================================================
+    // FASE 3: APRENDIZAJE NO SUPERVISADO (K-Means y PCA)
+    // ==============================================================================
+    println("\n--> FASE 3: NO SUPERVISADO (Clusters y Extracción Principal)...")
+    val evaluadorCluster = new ClusteringEvaluator()
+
+    for (k <- 2 to 4) {
+      val kmeansTest = new KMeans().setK(k).setSeed(1L).setFeaturesCol("features")
+      val pipelineKMeans = new Pipeline().setStages(Array(assembler, scaler, kmeansTest))
+      val preds = pipelineKMeans.fit(dfFiltrado).transform(dfFiltrado)
+      val silhouette = evaluadorCluster.evaluate(preds)
+      println(s"  [*] Evaluando K=$k K-Means -> Silhouette: $silhouette")
+    }
+
+    println("  [*] Test Final con K-Means (K=2) y compresión geométrica (PCA k=2):")
+    val kmeansFinal = new KMeans().setK(2).setSeed(1L).setFeaturesCol("features")
+    val dfClusters = new Pipeline().setStages(Array(assembler, scaler, kmeansFinal)).fit(dfFiltrado).transform(dfFiltrado)
+    dfClusters.groupBy("prediction").count().show()
     
-    val condicionPositivos = (1 to 24).map(i => col(s"ACTIVA_H$i") >= 0).reduce(_ && _)
-    val dfLimpio = dfSeleccionado.na.drop(Seq("IDENTIFICADOR", "CNAE", "MERCADO")).filter(condicionPositivos)
-
-    val dfFiltroAnomes = dfLimpio.filter(col("ANOMES") === 201507)
-    val dfAgrupacionNoTipada = dfLimpio.groupBy("MERCADO", "CNAE").count().orderBy(desc("count"))
-    dfAgrupacionNoTipada.show(5)
+    val pca = new PCA().setInputCol("features").setOutputCol("pcaFeatures").setK(2)
+    val dfPCA = pca.fit(dfClusters).transform(dfClusters)
+    println("  [+] Compresión PCA completada.")
 
 
     // ==============================================================================
-    // BLOQUE 3: DATASETS (API TIPADA)
+    // FASE 4: APRENDIZAJE SUPERVISADO (Clasificacion Binaria con ROC)
     // ==============================================================================
-    println("\n--> EJECUTANDO BLOQUE 3 (DATASETS)...")
-    val dsConsumo = dfLimpio.as[ConsumoElectrico]
-
-    val dsMercadoRegulado = dsConsumo.filter(cliente => cliente.MERCADO == "M1")
-    val dsAnalisisImpacto = dsMercadoRegulado.map(cliente => {
-      val diferenciaNoturna = cliente.ACTIVA_H22 - cliente.ACTIVA_H4
-      (cliente.ANOMES, cliente.PRODUCTO, diferenciaNoturna)
-    }).withColumnRenamed("_1", "ANOMES").withColumnRenamed("_2", "PRODUCTO").withColumnRenamed("_3", "Diferencia_Noche_Madrugada")
-
-    val dsTotalHoraPuntaPorProducto = dsConsumo
-      .groupByKey(cliente => cliente.PRODUCTO)
-      .mapValues(cliente => cliente.ACTIVA_H14) 
-      .reduceGroups((consumo_a, consumo_b) => consumo_a + consumo_b)
-      .withColumnRenamed("value", "Suma_Total_H14")
+    println("\n--> FASE 4: SUPERVISADO (Mediciones ROC)...")
     
-    dsTotalHoraPuntaPorProducto.show(5)
-
-
-    // ==============================================================================
-    // BLOQUE 4: UDF Y SQL
-    // ==============================================================================
-    println("\n--> EJECUTANDO BLOQUE 4 (UDF Y SQL)...")
+    val Array(trainingData, testData) = dfFiltrado.randomSplit(Array(0.7, 0.3), seed = 1234L)
     
-    val clasificarPerfil = udf((h19: Double, h20: Double, h21: Double, h22: Double, h23: Double) => {
-      val pico = h19 + h20 + h21 + h22 + h23
-      if (pico > 2500) "Consumidor EXTREMO"
-      else if (pico > 1000) "Consumidor ALTO"
-      else "Consumidor NORMAL"
-    })
+    val evaluadorROC = new BinaryClassificationEvaluator()
+      .setLabelCol("label")
+      .setRawPredictionCol("rawPrediction")
+      .setMetricName("areaUnderROC")
 
-    val formatearFecha = udf((anomes: Int) => {
-      val texto = anomes.toString
-      texto.substring(0, 4) + "-" + texto.substring(4, 6)
-    })
+    println("  [*] Baseline: Regresión Logística")
+    val lr = new LogisticRegression().setLabelCol("label").setFeaturesCol("features").setMaxIter(10)
+    val pipelineLR = new Pipeline().setStages(Array(assembler, scaler, labelIndexer, lr))
+    val lrROC = evaluadorROC.evaluate(pipelineLR.fit(trainingData).transform(testData))
+    println(s"  [-] Área bajo la Curva ROC (LogisticRegression): $lrROC")
 
-    val dfPerfilado = dfLimpio
-      .withColumn(
-        "Perfil_Intensidad_Tarde", 
-        clasificarPerfil(col("ACTIVA_H19"), col("ACTIVA_H20"), col("ACTIVA_H21"), col("ACTIVA_H22"), col("ACTIVA_H23"))
-      )
-      .withColumn("Mes_Formateado", formatearFecha(col("ANOMES")))
+    println("  [*] Entrenando CrossValidator con Random Forest (Esperar...)")
+    val rf = new RandomForestClassifier()
+      .setLabelCol("label")
+      .setFeaturesCol("features")
 
-    dfPerfilado.createOrReplaceTempView("tabla_consumos_electricos")
+    val pipelineRF = new Pipeline().setStages(Array(assembler, scaler, labelIndexer, rf))
 
-    val dfResumenSQL_A = spark.sql("""
-      SELECT Mes_Formateado, Perfil_Intensidad_Tarde, COUNT(IDENTIFICADOR) as Total_Clientes, ROUND(AVG(ACTIVA_H20), 2) as Media_Consumo_H20
-      FROM tabla_consumos_electricos
-      GROUP BY Mes_Formateado, Perfil_Intensidad_Tarde
-      ORDER BY Mes_Formateado ASC, Total_Clientes DESC
-    """)
+    val paramGrid = new ParamGridBuilder()
+      .addGrid(rf.numTrees, Array(10, 20))
+      //.addGrid(rf.maxDepth, Array(5, 7)) -> Optimizar tiempo local
+      .build()
 
-    val dfResumenSQL_B = spark.sql("""
-      SELECT MERCADO, Perfil_Intensidad_Tarde, COUNT(*) as Frecuencia
-      FROM tabla_consumos_electricos
-      WHERE Perfil_Intensidad_Tarde != 'Consumidor NORMAL'
-      GROUP BY MERCADO, Perfil_Intensidad_Tarde
-      ORDER BY MERCADO ASC, Frecuencia DESC
-    """)
+    val crossval = new CrossValidator()
+      .setEstimator(pipelineRF)
+      .setEvaluator(evaluadorROC)
+      .setEstimatorParamMaps(paramGrid)
+      .setNumFolds(3)
+      .setSeed(1234L)
 
-    println("--> RESULTADO FINAL SQL A:")
-    dfResumenSQL_A.show(15)
+    val cvModel = crossval.fit(trainingData)
+    val cvPreds = cvModel.transform(testData)
+    val cvROC = evaluadorROC.evaluate(cvPreds)
+    println(s"  [+] Área bajo la Curva ROC (RF + K-Folds): $cvROC")
 
-    println("--> RESULTADO FINAL SQL B:")
-    dfResumenSQL_B.show(10)
+    println("\n  [*] Extrayendo Árbol de Explicabilidad (DecisionTree)...")
+    val dt = new DecisionTreeClassifier().setLabelCol("label").setFeaturesCol("features").setMaxDepth(3)
+    val pipelineDT = new Pipeline().setStages(Array(assembler, scaler, labelIndexer, dt))
+    val pDTFit = pipelineDT.fit(trainingData)
+    val dtROC = evaluadorROC.evaluate(pDTFit.transform(testData))
+    
+    val arbolAislado = pDTFit.stages(3).asInstanceOf[DecisionTreeClassificationModel]
+    println(s"  [+] Área bajo la Curva ROC (Árbol Simple): $dtROC")
+    println(" \n====== REGLAS DE NEGOCIO OBTENIDAS ======")
+    println(arbolAislado.toDebugString)
+
+    println("\n  [*] Entrenando Gradient-Boosted Trees (Top Rendimiento Tabular)...")
+    val gbt = new GBTClassifier().setLabelCol("label").setFeaturesCol("features").setMaxIter(10).setMaxDepth(5)
+    val pipelineGBT = new Pipeline().setStages(Array(assembler, scaler, labelIndexer, gbt))
+    val gbtROC = evaluadorROC.evaluate(pipelineGBT.fit(trainingData).transform(testData))
+    println(s"  [+] Área bajo la Curva ROC (Gradient-Boosted Trees): $gbtROC")
 
     println("=====================================================")
-    println(" EJECUCIÓN FINALIZADA CON ÉXITO")
+    println(" PIPELINE FINALIZADO CON ÉXITO ")
     println("=====================================================")
-    
+
     spark.stop()
   }
 }

@@ -1,4 +1,4 @@
-# Entrega 3: Procesamiento Big Data con Apache Spark
+# Entrega 4: Procesamiento Big Data con Apache Spark
 
 Este repositorio contiene la implementación de un pipeline ETL completo para el análisis de consumos eléctricos utilizando Apache Spark y Scala. El proyecto aborda la limpieza, transformación y análisis algorítmico de grandes volúmenes de datos mediante diferentes APIs de Spark.
 
