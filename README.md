@@ -3,10 +3,9 @@
 Este repositorio contiene la implementación de un pipeline ETL completo para el análisis de consumos eléctricos utilizando Apache Spark y Scala. El proyecto aborda la limpieza, transformación y análisis algorítmico de grandes volúmenes de datos mediante diferentes APIs de Spark.
 
 ## Objetivos del Proyecto
-- Procesamiento paralelo a bajo nivel utilizando RDD.
-- Manipulación tabular y operaciones masivas mediante DataFrames (API No Tipada).
-- Validación estricta de tipos de datos utilizando Datasets (API Tipada).
-- Generación de reportes analíticos utilizando Spark SQL y funciones definidas por el usuario (UDFs).
+- Aplicar técnicas de aprendizaje supervisado y no supervisado para obtener conocimiento.
+- Seleccionar los algoritmos más adecuados para cada tarea.
+- Evaluar los resultados obtenidos.
 
 ## Estructura del Repositorio
 - `notebooks/`: Contiene el código interactivo (`codigo_zeppelin.scala`) diseñado para exploración e iteración visual en un entorno Apache Zeppelin.
